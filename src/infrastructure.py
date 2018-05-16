@@ -1,10 +1,4 @@
 import csv
-import copy
-import ast
-import os.path
-import time
-import math
-import logging
 
 
 def read_data_global(data_file):
