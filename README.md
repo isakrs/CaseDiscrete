@@ -3,6 +3,10 @@ Repository for Case Studies in Discrete Optimization.
 
 This repo wishes to minimize the total distance walked in a warehouse.
 
+## Requirements
+This project uses Python 3.6.4. 
+This project requires `gurobipy` among other packages. `gurobipy` is used with an academic licence.
+
 ## Code Style Agreement
 ### Git Use
 - Commit messages should be well written and written in imperative, to keep the history good.
