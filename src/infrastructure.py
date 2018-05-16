@@ -1,7 +1,7 @@
 import csv
 
 
-def read_data_global(data_file):
+def read_orders(data_file):
     """Function which reads a csv with the orders (example is dataClient.csv)
     and converts the data into an array of Orders (the order id is the same as the index of the array);
     each order contains Picks, which are populated with the data.
@@ -10,7 +10,7 @@ def read_data_global(data_file):
         data_file (string): name of the csv file.
 
     Returns:
-        Dictionary: orders with their corresponding picks.
+        orders: list of order objects.
 
     Example:
     >>> orders = read_data_global("dataClient.csv")
