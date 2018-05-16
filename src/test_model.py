@@ -1,29 +1,31 @@
 from gurobipy import *
 
-try:
 
-    # Create a new model
-    m = Model("mip1")
+def test_model():
+    try:
 
-    # Create variables
-    x = m.addVar(vtype=GRB.BINARY, name="x")
-    y = m.addVar(vtype=GRB.BINARY, name="y")
-    z = m.addVar(vtype=GRB.BINARY, name="z")
+        # Create a new model
+        m = Model("mip1")
 
-    # Set objective
-    m.setObjective(x + y + 2 * z, GRB.MAXIMIZE)
+        # Create variables
+        x = m.addVar(vtype=GRB.BINARY, name="x")
+        y = m.addVar(vtype=GRB.BINARY, name="y")
+        z = m.addVar(vtype=GRB.BINARY, name="z")
 
-    # Add constraint: x + 2 y + 3 z <= 4
-    m.addConstr(x + 2 * y + 3 * z <= 4, "c0")
+        # Set objective
+        m.setObjective(x + y + 2 * z, GRB.MAXIMIZE)
 
-    # Add constraint: x + y >= 1
-    m.addConstr(x + y >= 1, "c1")
-    m.optimize()
+        # Add constraint: x + 2 y + 3 z <= 4
+        m.addConstr(x + 2 * y + 3 * z <= 4, "c0")
 
-    for v in m.getVars():
-        print(v.varName, v.x)
+        # Add constraint: x + y >= 1
+        m.addConstr(x + y >= 1, "c1")
+        m.optimize()
 
-    print('objective value: ', m.objVal)
+        for v in m.getVars():
+            print(v.varName, v.x)
 
-except GurobiError:
-    print('Error reported')
+        print('objective value: ', m.objVal)
+
+    except GurobiError:
+        print('Error reported')
