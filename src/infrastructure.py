@@ -92,7 +92,7 @@ class Warehouse:
                data_file (string): name of the csv file.
            
            Returns:
-               dictionary: distances between the nodes.
+               self.dist: distances between the nodes.
 
            Example:
 
