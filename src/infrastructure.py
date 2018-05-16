@@ -6,6 +6,7 @@ import time
 import math
 import logging
 
+
 def read_data_global(data_file):
     """Function which reads a csv with the orders (example is dataClient.csv)
     and converts the data into an array of Orders (the order id is the same as the index of the array);
@@ -26,8 +27,6 @@ def read_data_global(data_file):
     >>> orders["000001"].picks[6]._id # get the id of the 7th pick of order id=00001
     >>> '000016'
     """
-
-
     
     #open the file
     with open(data_file, 'r') as datafile:
@@ -70,6 +69,7 @@ def read_data_global(data_file):
         orders[current_order_id] = current_order
     return orders
 
+
 class Order:
     def __init__(self, order_id):
         self.picks = []
@@ -78,6 +78,7 @@ class Order:
     #helper function
     def numPicks(self):
         return len(self.picks)
+
 
 class Batch:
     def __init__(self):
@@ -132,6 +133,7 @@ class Warehouse:
                 rownum += 1
         return self.dist
 
+
 class Pick:
     def __init__(self, data_row):
         self._order = data_row[0]
@@ -149,4 +151,3 @@ class Pick:
         self._box_nr = data_row[12]
         self._created_on = data_row[13]
         self._created_at = data_row[14]
-
