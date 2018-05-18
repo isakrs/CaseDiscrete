@@ -121,7 +121,7 @@ class Warehouse:
                         if colnum == 0:
                             current_node = col
                         else:
-                            current_dictionary[array_nodes[colnum]] = col
+                            current_dictionary[array_nodes[colnum]] = int(col)
                     colnum += 1
                 self.dist[current_node] = current_dictionary
                 rownum += 1
