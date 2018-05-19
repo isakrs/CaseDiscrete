@@ -5,20 +5,47 @@ NAME_DEPOT_NODE = ''
 
 
 class Model:
+    """This is the warehouse optimization model with uses gurobipy as optimizer.
+
+    Attributes:
+        gurobi_model (:obj: `gurobipy.Model`): This attribute holds all the information about variables
+                                               and solution the optimization problem.
+                                 vars (dict) : Dictionary with all gurobi.Model variabels.
+                                               key: name and item: gurobi.Model var.
+
+    """
     def __init__(self, orders, dist):
+        """
+        Args:
+            orders (:obj:`dict` of :obj:`infrastructure.Order`): Dict with all orders.
+                                                                 key: order_id, item: list of infrastructure.Order.
+            dist (:obj: `dict`): dict of shortest distance between node i and node j, dist['i']['j'].
+
+        """
         # gurobi types
         self.gurobi_model = gp.Model()
 
         # none gurobi types
+        self._max_n_batches = 1 # TODO: change this to len(orders) or reasonable upper bound on max batches
         self._nodes, self._n_picks = self._used_nodes(orders)
-        self._vars = self._variables(dist)
-        self._max_n_batches = self._n_picks # TODO; upper bound on max_n_batches, to long initializing vars
+        self.vars = self._variables(dist)
 
 
     def _used_nodes(self, orders):
+        """Finds the used nodes and number of picks in the orders input.
+
+        Args:
+            orders (:obj: `dict`): Dict of all orders.
+                                   key: order_id (str) and item: (list of infrastructure.Order)
+
+        Returns:
+             nodes (list): list of all node names (str)
+            n_picks (int): total number of picks
+        """
         nodes = set()
+
+        #TODO: Figure out the name of the depot, or start and end nodes, and makesure it is in dist and self._nodes
         #nodes.add(NAME_DEPOT_NODE)
-        # TODO: Figure out the name of the depot or start and end and make sure it is in the dist and self._nodes
 
         n_picks = 0
 
@@ -31,6 +58,19 @@ class Model:
 
 
     def _variables(self, dist):
+        """Initialise all the gurobi variables, and their objective function coefficients.
+
+        Note:
+            Objective function coefficents, obj=, are also set when variables initialised.
+            Default objective value is zero, and will remain so if not other is specified.
+
+        Args:
+            dist (:obj: `dict`): Dict with distances between nodes, eg dist['node_id_i']['node_id_j']
+
+        Returns:
+            vars (:obj: `dict`): Dictionary of variables.
+                                 key: id for variable, item: gurobi_model variable
+        """
         vars = dict()
 
         for batch in range(self._max_n_batches):
@@ -44,18 +84,21 @@ class Model:
 
         return vars
 
-    def _constraints_(self):
-        """
+    def _constraints(self):
+        """Initialize all the constraints"""
+
+        # example from gurobi website and their travelling salesman example
         # Add degree-2 constraint, and forbid loops
+        #
+        #for i in range(n):
+        #    m.addConstr(quicksum(vars[i,j] for j in range(n)) == 2)
+        #    vars[i,i].ub = 0
 
-        for i in range(n):
-          m.addConstr(quicksum(vars[i,j] for j in range(n)) == 2)
-          vars[i,i].ub = 0
+        #m.update()
 
-        m.update()
-        """
 
         # Constraint: Enter and leave node ones
         for batch_i in range(self._max_n_batches):
+            pass
 
 
