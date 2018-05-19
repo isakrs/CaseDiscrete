@@ -10,7 +10,7 @@ def read_orders(data_file):
         data_file (string): name of the csv file.
 
     Returns:
-        orders: list of order objects.
+        orders: dict of order objects.
 
     Example:
     >>> orders = read_data_global("dataClient.csv")
