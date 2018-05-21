@@ -18,13 +18,13 @@ def main():
     start = datetime.now()
     print('Model start time: ', str(start))
 
-    model = Model(orders, dist)
+    model = Model(dist, orders)
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), 'Model ended: ', str(end))
 
     print('number of used nodes: ', len(model._nodes))
-    print('number of variables: ', len(model._vars))
+    print('number of variables: ', len(model.vars))
 
 if __name__ == '__main__':
     main()

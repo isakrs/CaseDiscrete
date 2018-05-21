@@ -14,7 +14,7 @@ class Model:
                                                key: name and item: gurobi.Model var.
 
     """
-    def __init__(self, orders, dist):
+    def __init__(self, dist, orders):
         """
         Args:
             orders (:obj:`dict` of :obj:`infrastructure.Order`): Dict with all orders.
@@ -28,7 +28,7 @@ class Model:
         # none gurobi types
         self._max_n_batches = 1 # TODO: change this to len(orders) or reasonable upper bound on max batches
         self._nodes, self._n_picks = self._used_nodes(orders)
-        self.vars = self._variables(dist)
+        self.vars = self._variables(dist, orders)
 
 
     def _used_nodes(self, orders):
@@ -57,7 +57,7 @@ class Model:
         return nodes, n_picks
 
 
-    def _variables(self, dist):
+    def _variables(self, dist, orders):
         """Initialise all the gurobi variables, and their objective function coefficients.
 
         Note:
@@ -73,14 +73,29 @@ class Model:
         """
         vars = dict()
 
+        # variable: x
         for batch in range(self._max_n_batches):
             for node_start in self._nodes:
                 for node_end in self._nodes:
-                    name = 'x' + '_' + str(batch) + '_' + node_start + '_' + node_end
+                    name = 'x' + '^' + str(batch) + '_' + node_start + '_' + node_end
                     vars['x', batch, node_start, node_end] = self.gurobi_model.addVar(obj=dist[node_start][node_end],
                                                                                       vtype=gp.GRB.BINARY,
                                                                                       name=name)
                 self.gurobi_model.update()
+
+        # variable: y
+        for order in orders:
+            for batch in range(self._max_n_batches):
+                name = 'y' + '^' + str(batch) + '_' + str(order)
+                vars['y', batch, order] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
+            self.gurobi_model.update()
+
+        # variable: b
+
+        # variable: B
+
+        # constant: S. Make numpy array  
+
 
         return vars
 
