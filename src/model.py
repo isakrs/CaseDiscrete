@@ -91,6 +91,10 @@ class Model:
             self.gurobi_model.update()
 
         # variable: b
+        for batch in range(self._max_n_batches):
+            name = 'b' + '_' + str(batch)
+            vars['b', batch] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
+        self.gurobi_model.update()
 
         # variable: B
 
