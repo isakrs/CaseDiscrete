@@ -97,6 +97,11 @@ class Model:
         self.gurobi_model.update()
 
         # variable: B
+        for batch in range(self._max_n_batches):
+            for node in self._nodes:
+                name = 'B' + '^' + str(batch) + '_' + node
+                vars['B', batch, node] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
+            self.gurobi_model.update()
 
         # constant: S. Make numpy array  
 
