@@ -1,7 +1,5 @@
 import gurobipy as gp
 
-import numpy as np
-
 
 NAME_DEPOT_NODE = ''
 
@@ -14,7 +12,15 @@ class Model:
                                                and solution the optimization problem.
                           vars (:obj: `dict`): Dictionary with all gurobi.Model variabels.
                                                key: name and item: gurobi.Model var.
-                     constants (:obj: `dict`): Dictionart with all the constants, ie S. 
+                                               eg. vars['x', 'superscript1', 'subscript1', 'subscript2'] 
+                                                   is gurobi_model variable
+                     constants (:obj: `dict`): Dictionart with all the constants, ie S.
+                                               key: name and item: value (int)
+                                               eg. vars['S', 'superscript1', 'subscript1', 'subscript2'] 
+                                                   is binary
+
+    Note:
+        Convention: superscripts are used before subscripts when indexing in dicts.
 
     """
 
@@ -44,8 +50,8 @@ class Model:
                                    key: order_id (str) and item: (list of infrastructure.Order)
 
         Returns:
-             nodes (list): list of all node names (str)
-            n_picks (int): total number of picks
+             nodes (:obj: `list`): list of all node names (str)
+                    n_picks (int): total number of picks
         """
         nodes = set()
 
@@ -62,9 +68,31 @@ class Model:
         return nodes, n_picks
 
     def _set_constants(self, orders):
+        """Sets all constant numbers for Model.
+
+        Note:
+            Convention: superscripts are used before subscripts when indexing in dicts.
+
+        Args:
+            orders (:obj: `dict`): Dict of all orders.
+                                   key: order_id (str) and item: (list of infrastructure.Order)
+
+        Returns:
+             nodes (:obj: `dict`): dict with all Model constants
+                                   key: constant name and item: value (float)
+                                   ie. constant['S', 'order_id', 'node'] is binary
+        """
         constants = dict()
 
-        # constant: S, a numpy array
+        # constant S
+        for order_id in orders:
+            for node in self._nodes:
+                constants['S', order_id, node] = 0
+        for order_id, order in orders.items():
+            for pick in order.picks:
+                for node in self._nodes:
+                    if pick._warehouse_location == node:
+                        constants['S', order_id, node] = 1
 
         return constants
 
@@ -83,6 +111,7 @@ class Model:
         Returns:
             vars (:obj: `dict`): Dictionary of variables.
                                  key: id for variable, item: gurobi_model variable
+                                 eg. vars['x', 'superscript1', 'subscript1', 'subscript2'] is gurobipy variable
         """
         vars = dict()
 

@@ -21,10 +21,11 @@ def main():
     model = Model(dist, orders)
 
     end = datetime.now()
-    print('Model duration time: ', str(end - start), 'Model ended: ', str(end))
+    print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
 
     print('number of used nodes: ', len(model._nodes))
     print('number of variables: ', len(model.vars))
+    print('number of constants: ', len(model._constants))
 
 if __name__ == '__main__':
     main()
