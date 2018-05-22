@@ -12,16 +12,19 @@ class Model:
     Attributes:
         gurobi_model (:obj: `gurobipy.Model`): This attribute holds all the information about variables
                                                and solution the optimization problem.
-                                 vars (dict) : Dictionary with all gurobi.Model variabels.
+                          vars (:obj: `dict`): Dictionary with all gurobi.Model variabels.
                                                key: name and item: gurobi.Model var.
+                     constants (:obj: `dict`): Dictionart with all the constants, ie S. 
 
     """
+
     def __init__(self, dist, orders):
         """
         Args:
             orders (:obj:`dict` of :obj:`infrastructure.Order`): Dict with all orders.
                                                                  key: order_id, item: list of infrastructure.Order.
-            dist (:obj: `dict`): dict of shortest distance between node i and node j, dist['i']['j'].
+                                            dist (:obj: `dict`): dict of shortest distances, 
+                                                                 between node i and node j, dist['i']['j'].
 
         """
         # gurobi types
@@ -30,8 +33,8 @@ class Model:
         # none gurobi types
         self._max_n_batches = 1 # TODO: change this to len(orders) or reasonable upper bound on max batches
         self._nodes, self._n_picks = self._used_nodes(orders)
-        self.vars = self._variables(dist, orders)
-
+        self._constants = self._set_constants(orders)
+        self.vars = self._set_variables(dist, orders)
 
     def _used_nodes(self, orders):
         """Finds the used nodes and number of picks in the orders input.
@@ -46,7 +49,7 @@ class Model:
         """
         nodes = set()
 
-        #TODO: Figure out the name of the depot, or start and end nodes, and makesure it is in dist and self._nodes
+        # TODO: Figure out the name of the depot, or start and end nodes, and makesure it is in dist and self._nodes
         #nodes.add(NAME_DEPOT_NODE)
 
         n_picks = 0
@@ -58,8 +61,14 @@ class Model:
 
         return nodes, n_picks
 
+    def _set_constants(self, orders):
+        constants = dict()
 
-    def _variables(self, dist, orders):
+        # constant: S, a numpy array
+
+        return constants
+
+    def _set_variables(self, dist, orders):
         """Initialise all the gurobi variables, and their objective function coefficients.
 
         Note:
@@ -67,7 +76,9 @@ class Model:
             Default objective value is zero, and will remain so if not other is specified.
 
         Args:
-            dist (:obj: `dict`): Dict with distances between nodes, eg dist['node_id_i']['node_id_j']
+              dist (:obj: `dict`): Dict with distances between nodes, eg dist['node_id_i']['node_id_j']
+            orders (:obj: `dict`): Dict of all orders.
+                                   key: order_id (str) and item: (list of infrastructure.Order)
 
         Returns:
             vars (:obj: `dict`): Dictionary of variables.
