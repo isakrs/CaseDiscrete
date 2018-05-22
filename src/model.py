@@ -1,5 +1,7 @@
 import gurobipy as gp
 
+import numpy as np
+
 
 NAME_DEPOT_NODE = ''
 
@@ -102,9 +104,6 @@ class Model:
                 name = 'B' + '^' + str(batch) + '_' + node
                 vars['B', batch, node] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
             self.gurobi_model.update()
-
-        # constant: S. Make numpy array  
-
 
         return vars
 
