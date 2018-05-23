@@ -117,10 +117,10 @@ class Model:
 
         # variable: x
         for batch in range(self._max_n_batches):
-            for node_start in self._nodes:
-                for node_end in self._nodes:
-                    name = 'x' + '^' + str(batch) + '_' + node_start + '_' + node_end
-                    vars['x', batch, node_start, node_end] = self.gurobi_model.addVar(obj=dist[node_start][node_end],
+            for node_i in self._nodes:
+                for node_j in self._nodes:
+                    name = 'x' + '^' + str(batch) + '_' + node_i + '_' + node_j
+                    vars['x', batch, node_i, node_j] = self.gurobi_model.addVar(obj=dist[node_i][node_j],
                                                                                       vtype=gp.GRB.BINARY,
                                                                                       name=name)
                 self.gurobi_model.update()
