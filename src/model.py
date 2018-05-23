@@ -14,13 +14,14 @@ class Model:
                                                key: name and item: gurobi.Model var.
                                                eg. vars['x', 'superscript1', 'subscript1', 'subscript2'] 
                                                    is gurobi_model variable
-                     constants (:obj: `dict`): Dictionart with all the constants, ie S.
+                     constants (:obj: `dict`): Dictionary with all the constants, ie S.
                                                key: name and item: value (int)
-                                               eg. vars['S', 'superscript1', 'subscript1', 'subscript2'] 
+                                               eg. constants['S', 'superscript1', 'subscript1', 'subscript2'] 
                                                    is binary
 
     Note:
-        Convention: superscripts are used before subscripts when indexing in dicts.
+        Objective function coefficients are set when variable are set.
+        Superscripts are used before subscripts when indexing in dicts.
 
     """
 
@@ -33,14 +34,17 @@ class Model:
                                                                  between node i and node j, dist['i']['j'].
 
         """
-        # gurobi types
+        # set gurobi types
         self.gurobi_model = gp.Model()
 
-        # none gurobi types
+        # set none gurobi types
         self._max_n_batches = 1 # TODO: change this to len(orders) or reasonable upper bound on max batches
         self._nodes, self._n_picks = self._used_nodes(orders)
         self._constants = self._set_constants(orders)
         self.vars = self._set_variables(dist, orders)
+
+        # set model constaints
+        self._set_constraints(dist, orders)
 
     def _used_nodes(self, orders):
         """Finds the used nodes and number of picks in the orders input.
@@ -147,7 +151,7 @@ class Model:
 
         return vars
 
-    def _constraints(self):
+    def _set_constraints(self, dist, orders):
         """Initialize all the constraints"""
 
         # example from gurobi website and their travelling salesman example
