@@ -1,7 +1,8 @@
 import gurobipy as gp
 
 
-NAME_DEPOT_NODE = ''
+NAME_START_NODE = "F-20-28"
+NAME_END_NODE = "F-20-27"
 
 
 class Model:
@@ -59,8 +60,8 @@ class Model:
         """
         nodes = set()
 
-        # TODO: Figure out the name of the depot, or start and end nodes, and makesure it is in dist and self._nodes
-        #nodes.add(NAME_DEPOT_NODE)
+        nodes.add(NAME_START_NODE)
+        nodes.add(NAME_END_NODE)
 
         n_picks = 0
 
