@@ -20,12 +20,19 @@ def main():
 
     model = Model(dist, orders)
 
+    model.gurobi_model.optimize()
+    #solution = model.gurobi_model.getAttr('x', model._vars)
+
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
 
     print('number of used nodes: ', len(model._nodes))
-    print('number of variables: ', len(model.vars))
+    print('number of variables: ', len(model._vars))
     print('number of constants: ', len(model._constants))
+
+    #print(model._nodes['F-14-21'])
+
+    #print('number of constraints: ', len(model._constraints))
 
 if __name__ == '__main__':
     main()
