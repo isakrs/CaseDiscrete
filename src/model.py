@@ -161,28 +161,19 @@ class Model:
 
         return _vars
 
-    def _set_constraints(self, dist, orders):
-        """Initialize all the constraints"""
+    def _set_constraints(self, orders):
+        """Initialise all the gurobi constraints apart from the subtour constraint
 
-        # example from gurobi website and their travelling salesman example
-        # Add degree-2 constraint, and forbid loops
-        #
-        #for i in range(n):
-        #    m.addConstr(quicksum(_vars[i,j] for j in range(n)) == 2)
-        #    _vars[i,i].ub = 0
+        Args:
+            orders (:obj: `dict`): Dict of all orders.
+                                   key: order_id (str) and item: (list of infrastructure.Order)
 
-        #m.update()
-
-
-        # Constraint: Enter and leave node ones
-        #for batch_i in range(self._max_n_batches):
-        #    pass
-
-        #_constraints = {}
+        Returns:
+            None: it serves as a void function where all the constraint are being set in the Gurobi model
+        """
         v_a = 1
         node_i = 0
 
-        print(self._VOL)
         for batch in range(self._max_n_batches):
             #Constraint 3.32 in the master thesis
             name = "constraint:" + '5' + ", batch: " + str(batch)

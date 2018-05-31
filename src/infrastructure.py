@@ -59,8 +59,6 @@ def read_orders(data_file):
                 pick = Pick(current_pick_data)
                 current_order.picks = current_order.picks + [pick]
             rownum += 1
-            if (rownum > 100):
-                break
         #add the last order to the array
         orders[current_order_id] = current_order
     return orders
