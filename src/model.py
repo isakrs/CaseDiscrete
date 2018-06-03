@@ -1,8 +1,76 @@
 import gurobipy as gp
+import itertools
 
 
 NAME_START_NODE = "F-20-28"
 NAME_END_NODE = "F-20-27"
+
+def find_subsets(S):
+
+    """Helper function which returns a set of all the subsets of set S.
+
+    Args:
+        S (set or array): the set of which you want to output all the subsets.
+
+    Returns:
+        set: returns a set of all subsets.
+
+    Example:
+    >>> find_subsets(("1" ,"2" ,"3"))
+    {'1', ('1', '3'), '3', ('1', '2'), (), ('2', '3'), '2'}
+    """
+    set_all_subsets = set()
+    #print(len(S)-1)
+    for i in range(len(S)):
+        subset_with_length_i = set(itertools.combinations(S, i))
+        #print(subset_with_length_i)
+        if (i == 1):
+            for element in S:
+                set_all_subsets.add(element)
+        else:
+            for subset in subset_with_length_i:
+                set_all_subsets.add(subset)
+    return set_all_subsets
+
+##def subtour(edges):
+##  visited = [False]*n
+##  cycles = []
+##  lengths = []
+##  selected = [[] for i in range(n)]
+##  for x,y in edges:
+##    selected[x].append(y)
+##  while True:
+##    current = visited.index(False)
+##    thiscycle = [current]
+##    while True:
+##      visited[current] = True
+##      neighbors = [x for x in selected[current] if not visited[x]]
+##      if len(neighbors) == 0:
+##        break
+##      current = neighbors[0]
+##      thiscycle.append(current)
+##    cycles.append(thiscycle)
+##    lengths.append(len(thiscycle))
+##    if sum(lengths) == n:
+##      break
+##  return cycles[lengths.index(min(lengths))]
+##
+##def subtourelim(model, where):
+##  if where == GRB.callback.MIPSOL:
+##    selected = []
+##    # make a list of edges selected in the solution
+##    for i in range(n):
+##      sol = model.cbGetSolution([model._vars[i,j] for j in range(n)])
+##      selected += [(i,j) for j in range(n) if sol[j] > 0.5]
+##    # find the shortest cycle in the selected edge list
+##    tour = subtour(selected)
+##    if len(tour) < n:
+##      # add a subtour elimination constraint
+##      expr = 0
+##      for i in range(len(tour)):
+##        for j in range(i+1, len(tour)):
+##          expr += model._vars[tour[i], tour[j]]
+##      model.cbLazy(expr <= len(tour)-1)
 
 
 class Model:
@@ -39,14 +107,14 @@ class Model:
         self.gurobi_model = gp.Model()
 
         # set none gurobi types
-        self._max_n_batches = 1 # TODO: change this to len(orders) or reasonable upper bound on max batches
+        self._max_n_batches = 2 # TODO: change this to len(orders) or reasonable upper bound on max batches
         self._VOL = self._find_max_order(orders)
         self._nodes, self._n_picks = self._used_nodes(orders)
         self._constants = self._set_constants(orders)
         self._vars = self._set_variables(dist, orders)
 
         # set model constraints
-        self._set_constraints(dist, orders)
+        self._set_constraints(orders)
 
     def _find_max_order(self, orders):
         max_order = 0
@@ -76,8 +144,9 @@ class Model:
 
         for order_id, order in orders.items():
             for pick in order.picks:
-                nodes.append(pick._warehouse_location)
-                n_picks += 1
+                if pick._warehouse_location not in nodes:
+                    nodes.append(pick._warehouse_location)
+                    n_picks += 1
 
         return nodes, n_picks
 
@@ -175,6 +244,20 @@ class Model:
         node_i = 0
 
         for batch in range(self._max_n_batches):
+            #Constraint 3.31 in the master thesis
+            set_subsets = find_subsets(self._nodes)
+            for subset in set_subsets:
+                if subset != ():
+                    if (len(subset[0]) == 1):
+                        subset = [''.join(subset)]
+                    else:
+                        subset = list(subset)
+                    name = "constraint:" + '3,' + ", batch: " + str(batch) + ", subset: " + str(subset)
+                    self.gurobi_model.addConstr(sum(sum(self._vars['x', batch, node_i, node_j] for node_i in subset[:(subset.index(node_j)-1)])
+                                                    for node_j in subset) <= len(subset) - 1, name)
+                    self.gurobi_model.update()
+             
+            
             #Constraint 3.32 in the master thesis
             name = "constraint:" + '5' + ", batch: " + str(batch)
             self.gurobi_model.addConstr(sum(v_a * self._vars['y', batch, order] for order in orders) <= self._vars['b', batch] * self._VOL, name)
