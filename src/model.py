@@ -32,46 +32,6 @@ def find_subsets(S):
                 set_all_subsets.add(subset)
     return set_all_subsets
 
-##def subtour(edges):
-##  visited = [False]*n
-##  cycles = []
-##  lengths = []
-##  selected = [[] for i in range(n)]
-##  for x,y in edges:
-##    selected[x].append(y)
-##  while True:
-##    current = visited.index(False)
-##    thiscycle = [current]
-##    while True:
-##      visited[current] = True
-##      neighbors = [x for x in selected[current] if not visited[x]]
-##      if len(neighbors) == 0:
-##        break
-##      current = neighbors[0]
-##      thiscycle.append(current)
-##    cycles.append(thiscycle)
-##    lengths.append(len(thiscycle))
-##    if sum(lengths) == n:
-##      break
-##  return cycles[lengths.index(min(lengths))]
-##
-##def subtourelim(model, where):
-##  if where == GRB.callback.MIPSOL:
-##    selected = []
-##    # make a list of edges selected in the solution
-##    for i in range(n):
-##      sol = model.cbGetSolution([model._vars[i,j] for j in range(n)])
-##      selected += [(i,j) for j in range(n) if sol[j] > 0.5]
-##    # find the shortest cycle in the selected edge list
-##    tour = subtour(selected)
-##    if len(tour) < n:
-##      # add a subtour elimination constraint
-##      expr = 0
-##      for i in range(len(tour)):
-##        for j in range(i+1, len(tour)):
-##          expr += model._vars[tour[i], tour[j]]
-##      model.cbLazy(expr <= len(tour)-1)
-
 
 class Model:
     """This is the warehouse optimization model with uses gurobipy as optimizer.
@@ -107,7 +67,7 @@ class Model:
         self.gurobi_model = gp.Model()
 
         # set none gurobi types
-        self._max_n_batches = 2 # TODO: change this to len(orders) or reasonable upper bound on max batches
+        self._max_n_batches = 1 # TODO: change this to len(orders) or reasonable upper bound on max batches
         self._VOL = self._find_max_order(orders)
         self._nodes, self._n_picks = self._used_nodes(orders)
         self._constants = self._set_constants(orders)
@@ -199,14 +159,17 @@ class Model:
         _vars = dict()
 
         # variable: x
+        #an undirected graph is considered i.e. x_i_j = x_j_i is the same and x_j_i is not being considered
+        index_i = 0
         for batch in range(self._max_n_batches):
             for node_i in self._nodes:
-                for node_j in self._nodes:
+                for node_j in self._nodes[(index_i+1):]:
                     name = 'x' + '^' + str(batch) + '_' + node_i + '_' + node_j
                     _vars['x', batch, node_i, node_j] = self.gurobi_model.addVar(obj=dist[node_i][node_j],
-                                                                                      vtype=gp.GRB.BINARY,
+                                                                                    vtype=gp.GRB.BINARY,
                                                                                       name=name)
                 self.gurobi_model.update()
+                index_i = index_i + 1
 
         # variable: y
         for order in orders:
@@ -241,7 +204,7 @@ class Model:
             None: it serves as a void function where all the constraint are being set in the Gurobi model
         """
         v_a = 1
-        node_i = 0
+        is_in_batch = True
 
         for batch in range(self._max_n_batches):
             #Constraint 3.31 in the master thesis
@@ -250,12 +213,23 @@ class Model:
                 if subset != ():
                     if (len(subset[0]) == 1):
                         subset = [''.join(subset)]
+                        next
                     else:
                         subset = list(subset)
-                    name = "constraint:" + '3,' + ", batch: " + str(batch) + ", subset: " + str(subset)
-                    self.gurobi_model.addConstr(sum(sum(self._vars['x', batch, node_i, node_j] for node_i in subset[:(subset.index(node_j)-1)])
-                                                    for node_j in subset) <= len(subset) - 1, name)
-                    self.gurobi_model.update()
+
+                    #check if each node of the subset is included in the batch
+                    #for node in subset:
+                        #print(node)
+                        #if not (node in batch):
+                            #is_in_batch = False
+
+                    #if not every node is included in the batch we skip the constraint (it helps for efficiency)
+                    if is_in_batch:
+                        name = "constraint:" + '3,' + ", batch: " + str(batch) + ", subset: " + str(subset)
+                        self.gurobi_model.addConstr(sum(sum(self._vars['x', batch, node_i, node_j]
+                                                            for node_j in subset[(subset.index(node_i)+1):])
+                                                    for node_i in subset) <= len(subset) , name)
+                        self.gurobi_model.update()
              
             
             #Constraint 3.32 in the master thesis
