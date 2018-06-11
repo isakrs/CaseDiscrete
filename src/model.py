@@ -6,7 +6,6 @@ NAME_START_NODE = "F-20-28"
 NAME_END_NODE = "F-20-27"
 
 def find_subsets(S):
-
     """Helper function which returns a set of all the subsets of set S.
 
     Args:
@@ -20,16 +19,17 @@ def find_subsets(S):
     {'1', ('1', '3'), '3', ('1', '2'), (), ('2', '3'), '2'}
     """
     set_all_subsets = set()
-    #print(len(S)-1)
+
     for i in range(len(S)):
         subset_with_length_i = set(itertools.combinations(S, i))
-        #print(subset_with_length_i)
+        
         if (i == 1):
             for element in S:
                 set_all_subsets.add(element)
         else:
             for subset in subset_with_length_i:
                 set_all_subsets.add(subset)
+    
     return set_all_subsets
 
 
@@ -146,6 +146,9 @@ class Model:
             Objective function coefficents, obj=, are also set when variables initialised.
             Default objective value is zero, and will remain so if not other is specified.
 
+            Assuming an undirected graph, is i.e. x_i_j^k equals x_j_i^k (walking direction
+            does not matter). Hence we only use x_i_j^k and not x_j_i^k.
+
         Args:
               dist (:obj: `dict`): Dict with distances between nodes, eg dist['node_id_i']['node_id_j']
             orders (:obj: `dict`): Dict of all orders.
@@ -159,7 +162,6 @@ class Model:
         _vars = dict()
 
         # variable: x
-        #an undirected graph is considered i.e. x_i_j = x_j_i is the same and x_j_i is not being considered
         index_i = 0
         for batch in range(self._max_n_batches):
             for node_i in self._nodes:
@@ -169,7 +171,7 @@ class Model:
                                                                                     vtype=gp.GRB.BINARY,
                                                                                       name=name)
                 self.gurobi_model.update()
-                index_i = index_i + 1
+                index_i += 1
 
         # variable: y
         for order in orders:
@@ -207,7 +209,7 @@ class Model:
         is_in_batch = True
 
         for batch in range(self._max_n_batches):
-            #Constraint 3.31 in the master thesis
+            # Constraint 3.31 in the master thesis
             set_subsets = find_subsets(self._nodes)
             for subset in set_subsets:
                 if subset != ():
@@ -216,12 +218,6 @@ class Model:
                         next
                     else:
                         subset = list(subset)
-
-                    #check if each node of the subset is included in the batch
-                    #for node in subset:
-                        #print(node)
-                        #if not (node in batch):
-                            #is_in_batch = False
 
                     #if not every node is included in the batch we skip the constraint (it helps for efficiency)
                     if is_in_batch:
@@ -232,10 +228,10 @@ class Model:
                         self.gurobi_model.update()
              
             
-            #Constraint 3.32 in the master thesis
+            # Constraint 3.32 in the master thesis
             name = "constraint:" + '5' + ", batch: " + str(batch)
             self.gurobi_model.addConstr(sum(v_a * self._vars['y', batch, order] for order in orders) <= self._vars['b', batch] * self._VOL, name)
-            #Constraint 3.30 in the master thesis
+            # Constraint 3.30 in the master thesis
             name = "constraint:" + '3,' + ", batch: " + str(batch) 
             self.gurobi_model.addConstr(self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch], name)
             self.gurobi_model.update()
@@ -243,7 +239,7 @@ class Model:
             node_i = 1
             number_nodes = len(self._nodes)
             for node in self._nodes:
-                #Constraint 3.29 in the master thesis
+                # Constraint 3.29 in the master thesis
                 name = "constraint:" + '2,' + ", batch: " + str(batch) + ", node: " + str(node)
                 self.gurobi_model.addConstr(sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i-1)])
                                             + sum(self._vars['x', batch, self._nodes[node_i], node_j] for node_j in self._nodes[(node_i+1):])
@@ -254,17 +250,16 @@ class Model:
                 self.gurobi_model.update()
 
         for order in orders:
-            #Constraint 3.33 in the master thesis
+            # Constraint 3.33 in the master thesis
             name = "constraint:" + '6,' + "order: " + str(order) 
             self.gurobi_model.addConstr(sum(self._vars['y', batch_k, order] for batch_k in range(self._max_n_batches))==1, name)
-            print(self._vars['y', self._max_n_batches-1, order])
             self.gurobi_model.update()
+
+            # Constraint 3.34 in the master thesis
             for batch in range(self._max_n_batches):
                 for node in self._nodes:
-                    #Constraint 3.34 in the master thesis
                     name = "constraint:" + '7,' + "order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
-                    """_constraints['7', order, batch, node] = """
                     self.gurobi_model.addConstr(self._vars['B', batch, node] >=
                                                 self._vars['y', batch, order] * self._constants['S', order, node], name)
-                    self.gurobi_model.update()
+                	self.gurobi_model.update()
 
