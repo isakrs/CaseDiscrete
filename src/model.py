@@ -231,7 +231,7 @@ class Model:
                     else:
                         subset = list(subset)
 
-                        name = "constraint:" + '3,' + ", batch: " + str(batch) + ", subset: " + str(subset)
+                        name = "constraint:" + '3.31' + ", batch: " + str(batch) + ", subset: " + str(subset)
                         constraint = \
                             sum(sum(self._vars['x', batch, node_i, node_j] \
                             for node_j in subset[(subset.index(node_i)+1):]) for node_i in subset) \
@@ -242,14 +242,14 @@ class Model:
              
             
             # Constraint 3.32 in the master thesis
-            name = "constraint:" + '5' + ", batch: " + str(batch)
+            name = "constraint:" + '3.32' + ", batch: " + str(batch)
             constraint = \
                 sum(v_a * self._vars['y', batch, order] for order in orders) \
                 <= self._vars['b', batch] * self._constants['VOL']
             self.gurobi_model.addConstr(constraint, name)
             
             # Constraint 3.30 in the master thesis
-            name = "constraint:" + '3,' + ", batch: " + str(batch)
+            name = "constraint:" + '3.30' + ", batch: " + str(batch)
             constraint = self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch]
             self.gurobi_model.addConstr(constraint, name)
             self.gurobi_model.update()
@@ -258,7 +258,7 @@ class Model:
             node_i = 1
             number_nodes = len(self._nodes)
             for node in self._nodes:
-                name = "constraint:" + '2,' + ", batch: " + str(batch) + ", node: " + str(node)
+                name = "constraint:" + '3.29' + ", batch: " + str(batch) + ", node: " + str(node)
                 constraint = \
                     sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i-1)]) \
                     + sum(self._vars['x', batch, self._nodes[node_i], node_j] for node_j in self._nodes[(node_i+1):]) \
@@ -272,7 +272,7 @@ class Model:
 
         for order in orders:
             # Constraint 3.33 in the master thesis
-            name = "constraint:" + '6,' + "order: " + str(order)
+            name = "constraint:" + '3.33' + ", order: " + str(order)
             constraint = sum(self._vars['y', batch_k, order] for batch_k in range(self._max_n_batches)) == 1
             self.gurobi_model.addConstr(constraint, name)
             self.gurobi_model.update()
@@ -280,7 +280,7 @@ class Model:
             # Constraint 3.34 in the master thesis
             for batch in range(self._max_n_batches):
                 for node in self._nodes:
-                    name = "constraint:" + '7,' + "order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
+                    name = "constraint:" + '3.34' + ", order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
                     constraint = \
                         self._vars['B', batch, node] >= self._vars['y', batch, order] * self._constants['S', order, node]
                     self.gurobi_model.addConstr(constraint, name)
