@@ -71,7 +71,7 @@ class Order:
         self._order_id = order_id
 
     #helper function
-    def numPicks(self):
+    def num_picks(self):
         return len(self.picks)
 
 

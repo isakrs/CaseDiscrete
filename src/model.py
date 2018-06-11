@@ -36,8 +36,8 @@ def _max_order_size(orders):
     """Returns number of items in largest order"""
     max_order_size = 0
     for order in orders:
-        if (max_order_size < orders[order].numPicks()):
-            max_order_size = orders[order].numPicks()
+        if (max_order_size < orders[order].num_picks()):
+            max_order_size = orders[order].num_picks()
     return max_order_size
 
 
