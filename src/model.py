@@ -94,8 +94,7 @@ class Model:
              nodes (:obj: `list`): list of all node names (str)
                     n_picks (int): total number of picks
         """
-        #nodes = set()
-        nodes = []
+        nodes = list()
 
         nodes.append(NAME_START_NODE)
         nodes.append(NAME_END_NODE)
@@ -219,7 +218,7 @@ class Model:
                     else:
                         subset = list(subset)
 
-                    #if not every node is included in the batch we skip the constraint (it helps for efficiency)
+                    # if not every node is included in the batch we skip the constraint (it helps for efficiency)
                     if is_in_batch:
                         name = "constraint:" + '3,' + ", batch: " + str(batch) + ", subset: " + str(subset)
                         self.gurobi_model.addConstr(sum(sum(self._vars['x', batch, node_i, node_j]
@@ -231,23 +230,25 @@ class Model:
             # Constraint 3.32 in the master thesis
             name = "constraint:" + '5' + ", batch: " + str(batch)
             self.gurobi_model.addConstr(sum(v_a * self._vars['y', batch, order] for order in orders) <= self._vars['b', batch] * self._VOL, name)
+            
             # Constraint 3.30 in the master thesis
             name = "constraint:" + '3,' + ", batch: " + str(batch) 
             self.gurobi_model.addConstr(self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch], name)
             self.gurobi_model.update()
 
+            # Constraint 3.29 in the master thesis
             node_i = 1
             number_nodes = len(self._nodes)
             for node in self._nodes:
-                # Constraint 3.29 in the master thesis
                 name = "constraint:" + '2,' + ", batch: " + str(batch) + ", node: " + str(node)
                 self.gurobi_model.addConstr(sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i-1)])
                                             + sum(self._vars['x', batch, self._nodes[node_i], node_j] for node_j in self._nodes[(node_i+1):])
                                             == 2 * self._vars['B', batch, self._nodes[node_i]], name)
-                node_i = node_i + 1
+                node_i += 1
                 if (node_i >= number_nodes):
                     node_i = node_i - 1
-                self.gurobi_model.update()
+            
+            self.gurobi_model.update()
 
         for order in orders:
             # Constraint 3.33 in the master thesis
@@ -261,5 +262,5 @@ class Model:
                     name = "constraint:" + '7,' + "order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
                     self.gurobi_model.addConstr(self._vars['B', batch, node] >=
                                                 self._vars['y', batch, order] * self._constants['S', order, node], name)
-                	self.gurobi_model.update()
+                self.gurobi_model.update()
 
