@@ -67,7 +67,7 @@ class Model:
         self.gurobi_model = gp.Model()
 
         # set none gurobi types
-        self._max_n_batches = 1 # TODO: change this to len(orders) or reasonable upper bound on max batches
+        self._max_n_batches = 5 # TODO: change this to len(orders) or reasonable upper bound on max batches
         self._VOL = self._find_max_order(orders)
         self._nodes, self._n_picks = self._used_nodes(orders)
         self._constants = self._set_constants(orders)
@@ -168,8 +168,8 @@ class Model:
                     _vars['x', batch, node_i, node_j] = self.gurobi_model.addVar(obj=dist[node_i][node_j],
                                                                                     vtype=gp.GRB.BINARY,
                                                                                       name=name)
-                self.gurobi_model.update()
-                index_i = index_i + 1
+                    self.gurobi_model.update()
+            batch = batch + 1
 
         # variable: y
         for order in orders:
