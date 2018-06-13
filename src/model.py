@@ -62,7 +62,7 @@ class Model:
 
     """
 
-    def __init__(self, dist, orders, VOL=None):
+    def __init__(self, dist, orders, VOL=None, max_n_batches=None):
         """
         Args:
             orders (:obj:`dict` of :obj:`infrastructure.Order`): Dict with all orders.
@@ -73,6 +73,10 @@ class Model:
                                                                  fit on a workers tray. If VOL is not given (None), 
                                                                  then it will be set to the size of the 
                                                                  largest order (default).
+                                  max_n_batches (int, optional): Maximum number of batches (tours in the warehouse) 
+                                                                 that is allowed. If not given (default), ie None, 
+                                                                 then it will be set to the total number of orders.
+
 
         """
         # set gurobi types
@@ -81,7 +85,7 @@ class Model:
         # set none gurobi types
         self._max_n_batches = 1 # TODO: change this to len(orders) or reasonable upper bound on max batches
         self._nodes, self._n_picks = self._used_nodes(orders)
-        self._constants = self._set_constants(orders)
+        self._constants = self._set_constants(orders, max_n_batches)
         self._vars = self._set_variables(dist, orders)
 
         # set model constraints
@@ -113,18 +117,22 @@ class Model:
 
         return nodes, n_picks
 
-    def _set_constants(self, orders, VOL=None):
+    def _set_constants(self, orders, VOL=None, max_n_batches=None):
         """Sets all constant numbers for Model.
 
         Note:
             Convention: superscripts are used before subscripts when indexing in dicts.
 
         Args:
-            orders (:obj: `dict`): Dict of all orders.
-                                   key: order_id (str) and item: (list of infrastructure.Order)
-            VOL (float, optional): Maximum number of items, ie max volume, that can fit on a workers tray.
-                                   If VOL is not given (None), then it will be set to the size of the 
-                                   largest order.
+                    orders (:obj: `dict`): Dict of all orders.
+                                           key: order_id (str) and item: (list of infrastructure.Order)
+                    VOL (float, optional): Maximum number of items, ie max volume, that can fit on a workers tray.
+                                           If VOL is not given (None), then it will be set to the size of the 
+                                           largest order.
+            max_n_batches (int, optional): Maximum number of batches (tours in the warehouse) that is allowed. 
+                                           If not given (default), ie None, then it will be set to 
+                                           the total number of orders.
+
 
         Returns:
              nodes (:obj: `dict`): dict with all Model constants
@@ -138,6 +146,12 @@ class Model:
             constants['VOL'] = _max_order_size(orders)
         else:
             constants['VOL'] = VOL
+
+        # constant max_n_batches
+        if max_n_batches is None:
+            constants['max_n_batches'] = len(orders)
+        else: 
+            constants['max_n_batches'] = max_n_batches
 
 
         # constant S
@@ -176,7 +190,7 @@ class Model:
 
         # variable: x
         index_i = 0
-        for batch in range(self._max_n_batches):
+        for batch in range(self._constants['max_n_batches']):
             for node_i in self._nodes:
                 for node_j in self._nodes[(index_i+1):]:
                     name = 'x' + '^' + str(batch) + '_' + node_i + '_' + node_j
@@ -188,19 +202,19 @@ class Model:
 
         # variable: y
         for order in orders:
-            for batch in range(self._max_n_batches):
+            for batch in range(self._constants['max_n_batches']):
                 name = 'y' + '^' + str(batch) + '_' + str(order)
                 _vars['y', batch, order] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
             self.gurobi_model.update()
 
         # variable: b
-        for batch in range(self._max_n_batches):
+        for batch in range(self._constants['max_n_batches']):
             name = 'b' + '_' + str(batch)
             _vars['b', batch] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
         self.gurobi_model.update()
 
         # variable: B
-        for batch in range(self._max_n_batches):
+        for batch in range(self._constants['max_n_batches']):
             for node in self._nodes:
                 name = 'B' + '^' + str(batch) + '_' + node
                 _vars['B', batch, node] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
