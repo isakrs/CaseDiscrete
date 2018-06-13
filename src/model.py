@@ -287,12 +287,12 @@ class Model:
         for order in orders:
             # Constraint 3.33 in the master thesis
             name = "constraint:" + '3.33' + ", order: " + str(order)
-            constraint = sum(self._vars['y', batch_k, order] for batch_k in range(self._max_n_batches)) == 1
+            constraint = sum(self._vars['y', batch_k, order] for batch_k in range(self._constants['max_n_batches'])) == 1
             self.gurobi_model.addConstr(constraint, name)
             self.gurobi_model.update()
 
             # Constraint 3.34 in the master thesis
-            for batch in range(self._max_n_batches):
+            for batch in range(self._constants['max_n_batches']):
                 for node in self._nodes:
                     name = "constraint:" + '3.34' + ", order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
                     constraint = \
