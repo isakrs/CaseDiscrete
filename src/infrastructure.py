@@ -8,7 +8,7 @@ def read_orders(data_file, num_picks=None):
 
     Args:
                  data_file (string): name of the csv file.
-        num_items (float, optional): max overall total number of items, ie picks, that should be read 
+        num_picks (float, optional): max overall total number of items, ie picks, that should be read 
                                      from the csv file.
 
     Returns:
