@@ -1,13 +1,15 @@
 import csv
 
 
-def read_orders(data_file):
+def read_orders(data_file, num_picks=None):
     """Function which reads a csv with the orders (example is dataClient.csv)
     and converts the data into an array of Orders (the order id is the same as the index of the array);
     each order contains Picks, which are populated with the data.
 
     Args:
-        data_file (string): name of the csv file.
+                 data_file (string): name of the csv file.
+        num_picks (float, optional): max overall total number of items, ie picks, that should be read 
+                                     from the csv file.
 
     Returns:
         orders: dict of order objects.
@@ -59,7 +61,7 @@ def read_orders(data_file):
                 pick = Pick(current_pick_data)
                 current_order.picks = current_order.picks + [pick]
             rownum += 1
-            if (rownum > 10):
+            if (num_picks != None and rownum > num_picks):
                 break
         #add the last order to the array
         orders[current_order_id] = current_order
@@ -71,7 +73,7 @@ class Order:
         self._order_id = order_id
 
     #helper function
-    def numPicks(self):
+    def num_picks(self):
         return len(self.picks)
 
 
