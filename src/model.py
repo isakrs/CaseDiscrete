@@ -79,16 +79,13 @@ class Model:
 
 
         """
+        # set none gurobi types
+        self._nodes, self._n_picks = self._used_nodes(orders)
+        self._constants = self._set_constants(orders, max_n_batches=max_n_batches)
+
         # set gurobi types
         self.gurobi_model = gp.Model()
-
-        # set none gurobi types
-        self._max_n_batches = 1 # TODO: change this to len(orders) or reasonable upper bound on max batches
-        self._nodes, self._n_picks = self._used_nodes(orders)
-        self._constants = self._set_constants(orders, max_n_batches)
         self._vars = self._set_variables(dist, orders)
-
-        # set model constraints
         self._set_constraints(orders)
 
     def _used_nodes(self, orders):
@@ -234,7 +231,7 @@ class Model:
         """
         v_a = 1
 
-        for batch in range(self._max_n_batches):
+        for batch in range(self._constants['max_n_batches']):
             # Constraint 3.31 in the master thesis
             set_subsets = find_subsets(self._nodes)
             for subset in set_subsets:
