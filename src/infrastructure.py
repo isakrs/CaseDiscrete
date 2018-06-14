@@ -1,21 +1,18 @@
 import csv
-import copy
-import ast
-import os.path
-import time
-import math
-import logging
 
-def read_data_global(data_file):
+
+def read_orders(data_file, num_picks=None):
     """Function which reads a csv with the orders (example is dataClient.csv)
     and converts the data into an array of Orders (the order id is the same as the index of the array);
     each order contains Picks, which are populated with the data.
 
     Args:
-        data_file (string): name of the csv file.
+                 data_file (string): name of the csv file.
+        num_picks (float, optional): max overall total number of items, ie picks, that should be read 
+                                     from the csv file.
 
     Returns:
-        Dictionary: orders with their corresponding picks.
+        orders: dict of order objects.
 
     Example:
     >>> orders = read_data_global("dataClient.csv")
@@ -26,8 +23,6 @@ def read_data_global(data_file):
     >>> orders["000001"].picks[6]._id # get the id of the 7th pick of order id=00001
     >>> '000016'
     """
-
-
     
     #open the file
     with open(data_file, 'r') as datafile:
@@ -66,6 +61,8 @@ def read_data_global(data_file):
                 pick = Pick(current_pick_data)
                 current_order.picks = current_order.picks + [pick]
             rownum += 1
+            if (num_picks != None and rownum > num_picks):
+                break
         #add the last order to the array
         orders[current_order_id] = current_order
     return orders
@@ -76,8 +73,9 @@ class Order:
         self._order_id = order_id
 
     #helper function
-    def numPicks(self):
+    def num_picks(self):
         return len(self.picks)
+
 
 class Batch:
     def __init__(self):
@@ -97,7 +95,7 @@ class Warehouse:
                data_file (string): name of the csv file.
            
            Returns:
-               dictionary: distances between the nodes.
+               self.dist: distances between the nodes.
 
            Example:
 
@@ -126,11 +124,12 @@ class Warehouse:
                         if colnum == 0:
                             current_node = col
                         else:
-                            current_dictionary[array_nodes[colnum]] = col
+                            current_dictionary[array_nodes[colnum]] = int(col)
                     colnum += 1
                 self.dist[current_node] = current_dictionary
                 rownum += 1
         return self.dist
+
 
 class Pick:
     def __init__(self, data_row):
@@ -149,4 +148,3 @@ class Pick:
         self._box_nr = data_row[12]
         self._created_on = data_row[13]
         self._created_at = data_row[14]
-
