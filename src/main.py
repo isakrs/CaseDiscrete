@@ -28,7 +28,7 @@ def main():
 
     model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
 
-    model.gurobi_model.optimize()
+    model.gurobi_model.optimize(model.subtourelim)
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))

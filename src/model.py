@@ -278,3 +278,41 @@ class Model:
                         self._vars['B', batch, node] >= self._vars['y', batch, order] * self._constants['S', order, node]
                     self.gurobi_model.addConstr(constraint, name)
                 self.gurobi_model.update()
+
+    def _subtourelim(self, model, where):
+        print('_subtourelim is called')
+        if where == GRB.callback.MIPSOL:
+            # for every batch make a list of edges used in that batch
+            used_nodes = [[] for i in range(self.constants['max_n_batches'])]
+            for batch_k in range(self.constants['max_n_batches']):
+                for i in range(len(self._nodes)): 
+                    # TODO: it might matter that we use self._vars 
+                    # and not self.gurobi_model._vars at the gurobi example uses
+                    sol_batch_k = self.gurobi_model \
+                                  .cbGetSolution( \
+                                    [ self._vars['x', batch_k, self._nodes[i], self._nodes[j]] \
+                                      for j in range(len(self._nodes[i+1:])) \
+                                    ] \
+                                    )
+                    print('sol_batch_k: ', sol_batch_k)
+                    print('type sol_batch_k: ', type(sol_batch_k))
+                                  
+                    #used_nodes[batch_k] += \
+                    #    [ (self._nodes[i], self._nodes[j]) \
+                    #      for j in range(len(self._nodes[i+1:])) \
+                    #      if sol_batch_k[self._nodes[j]] > 0.5
+                    #    ]
+
+        """                
+            for i in range(n):
+                sol = model.cbGetSolution([model._vars[i,j] for j in range(n)])
+                selected += [(i,j) for j in range(n) if sol[j] > 0.5]
+            # find the shortest cycle in the selected edge list
+            tour = subtour(selected)
+            if len(tour) < n:
+                # add a subtour elimination constraint
+                expr = 0
+                for i in range(len(tour)):
+                    for j in range(i+1, len(tour)):
+                        expr += model._vars[tour[i], tour[j]]
+                model.cbLazy(expr <= len(tour)-1)
