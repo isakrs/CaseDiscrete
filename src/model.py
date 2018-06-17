@@ -104,6 +104,9 @@ class Model:
 
         return nodes, n_picks
 
+    def get_variables():
+        return _vars
+
     def _set_constants(self, orders, VOL=None, max_n_batches=None):
         """Sets all constant numbers for Model.
         Note:
@@ -177,6 +180,7 @@ class Model:
                     name = 'x' + '^' + str(batch) + '_' + node_i + '_' + node_j
                     _vars['x', batch, node_i, node_j] = self.gurobi_model.addVar(obj=dist[node_i][node_j],
                                                                                  vtype=gp.GRB.BINARY,name=name)
+                    #print(name)
                     self.gurobi_model.update()
                 index_i += 1
             batch = batch + 1

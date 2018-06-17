@@ -1,4 +1,38 @@
 import csv
+import gurobipy as gp
+
+def read_solution(model, dist):
+    """A global function which reads the solution of the model. It should be used in order to obtain all the relevant data of the solution
+
+    Args: model (Model): the model used to obtain the optimal solution
+          dist (dictionary): the distance matrix from Warehouse.dist
+
+          Returns: A list of Batch objects 
+
+    """
+    batches = []
+    curr_batch = -1
+    index = -1
+    for batch in range(model._constants['max_n_batches']):
+        index_i = 0
+        for node_i in model._nodes:
+            for node_j in model._nodes[(index_i +1):]:
+                a_var_reference = model.gurobi_model.getVarByName('x' + '^' + str(batch) + '_' + node_i + '_' + node_j)
+                #if x_k_i_j = 1 and if the current batch does not belong to the saved one then create a new Batch in the list
+                #and save the route and distance
+                if a_var_reference.X == 1 and batch != curr_batch:
+                    batches.append(Batch())
+                    curr_batch = batch
+                    index += 1
+                    batches[index].read_route(node_i, node_j)
+                    batches[index].read_distance(node_i, node_j, dist)
+                #if the batch is not new then just store the route and distance in the current batch
+                elif a_var_reference.X == 1:
+                    batches[index].read_route(node_i, node_j)
+                    batches[index].read_distance(node_i, node_j, dist)
+            index_i += 1
+    print("Number of batches: ", len(batches))
+    return batches
 
 
 def read_orders(data_file, num_picks=None):
@@ -79,7 +113,35 @@ class Order:
 
 class Batch:
     def __init__(self):
-        self.picks = []
+        self.route = []
+        self.distances = []
+        self.total_distance = 0
+
+    def read_route(self, node_i, node_j):
+        """A member function of the class Batch, which takes two nodes as insput and populates the route vector with the nodes
+
+           Args: node_i (pick._warehouse_location): the first node of the route
+                 node_j (pick._warehouse_location): the second node of the route
+
+           Returns: 
+        """
+        self.route.append(node_i)
+        self.route.append(node_j)
+        print(self.route)
+
+    def read_distance(self, node_i, node_j, dist):
+        """A member function of the class Batch, which takes two nodes as insput and populates the distance vector with the distances
+
+           Args: node_i (pick._warehouse_location): the first node of the route
+                 node_j (pick._warehouse_location): the second node of the route
+
+           Returns: 
+        """
+            distance = dist[node_i][node_j]
+            self.distances.append(distance)
+            print(self.distances)
+        
+            
 
 
 class Warehouse:

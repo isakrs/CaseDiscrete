@@ -1,4 +1,4 @@
-from infrastructure import read_orders, Batch, Order, Pick, Warehouse
+from infrastructure import read_orders, Batch, Order, Pick, Warehouse, read_solution
 from model import Model
 
 from datetime import datetime
@@ -7,7 +7,7 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 5
+NUM_PICKS = 3
 MAX_N_BATCHES = 1
 
 
@@ -29,6 +29,8 @@ def main():
     model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
 
     model.gurobi_model.optimize()
+
+    read_solution(model, dist)
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
