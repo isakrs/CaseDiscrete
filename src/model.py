@@ -37,8 +37,48 @@ def _max_order_size(orders):
             max_order_size = orders[order].num_picks()
     return max_order_size
 
+def subtourelim(model, where):
+        print('_subtourelim is called')
+        if where == gp.GRB.callback.MIPSOL:
+            # for every batch make a list of edges used in that batch
+            used_nodes = [[] for i in range(model._constants['max_n_batches'])]
+            for batch_k in range(model._constants['max_n_batches']):
+                for i in range(len(model._nodes)): 
+                    # TODO: it might matter that we use self._vars 
+                    # and not self.gurobi_model._vars at the gurobi example uses
+                    sol_batch_k = model.cbGetSolution( \
+                                    [ model._vars['x', batch_k, model._nodes[i], model._nodes[j]] \
+                                      for j in range(len(model._nodes[i+1:])) \
+                                    ] \
+                                    )
+                    print('sol_batch_k: ', sol_batch_k)
+                    print('type sol_batch_k: ', type(sol_batch_k))
+                    break
+                break
+                                  
+                    #used_nodes[batch_k] += \
+                    #    [ (self._nodes[i], self._nodes[j]) \
+                    #      for j in range(len(self._nodes[i+1:])) \
+                    #      if sol_batch_k[self._nodes[j]] > 0.5
+                    #    ]
 
-class Model:
+        """                
+            for i in range(n):
+                sol = model.cbGetSolution([model._vars[i,j] for j in range(n)])
+                selected += [(i,j) for j in range(n) if sol[j] > 0.5]
+            # find the shortest cycle in the selected edge list
+            tour = subtour(selected)
+            if len(tour) < n:
+                # add a subtour elimination constraint
+                expr = 0
+                for i in range(len(tour)):
+                    for j in range(i+1, len(tour)):
+                        expr += model._vars[tour[i], tour[j]]
+                model.cbLazy(expr <= len(tour)-1)
+        """
+
+
+class Model(gp.Model):
     """This is the warehouse optimization model with uses gurobipy as optimizer.
     Attributes:
         gurobi_model (:obj: `gurobipy.Model`): This attribute holds all the information about variables
@@ -76,7 +116,7 @@ class Model:
         self._constants = self._set_constants(orders, max_n_batches=max_n_batches)
 
         # set gurobi types
-        self.gurobi_model = gp.Model()
+        super().__init__()
         self._vars = self._set_variables(dist, orders)
         self._set_constraints(orders)
 
@@ -175,9 +215,10 @@ class Model:
             for node_i in self._nodes:
                 for node_j in self._nodes[(index_i+1):]:
                     name = 'x' + '^' + str(batch) + '_' + node_i + '_' + node_j
-                    _vars['x', batch, node_i, node_j] = self.gurobi_model.addVar(obj=dist[node_i][node_j],
-                                                                                 vtype=gp.GRB.BINARY,name=name)
-                    self.gurobi_model.update()
+                    _vars['x', batch, node_i, node_j] = super().addVar(obj=dist[node_i][node_j],
+                                                                       vtype=gp.GRB.BINARY,
+                                                                       name=name)
+                    super().update()
                 index_i += 1
             batch = batch + 1
 
@@ -185,21 +226,21 @@ class Model:
         for order in orders:
             for batch in range(self._constants['max_n_batches']):
                 name = 'y' + '^' + str(batch) + '_' + str(order)
-                _vars['y', batch, order] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
-            self.gurobi_model.update()
+                _vars['y', batch, order] = super().addVar(vtype=gp.GRB.BINARY, name=name)
+            super().update()
 
         # variable: b
         for batch in range(self._constants['max_n_batches']):
             name = 'b' + '_' + str(batch)
-            _vars['b', batch] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
-        self.gurobi_model.update()
+            _vars['b', batch] = super().addVar(vtype=gp.GRB.BINARY, name=name)
+        super().update()
 
         # variable: B
         for batch in range(self._constants['max_n_batches']):
             for node in self._nodes:
                 name = 'B' + '^' + str(batch) + '_' + node
-                _vars['B', batch, node] = self.gurobi_model.addVar(vtype=gp.GRB.BINARY, name=name)
-            self.gurobi_model.update()
+                _vars['B', batch, node] = super().addVar(vtype=gp.GRB.BINARY, name=name)
+            super().update()
 
         return _vars
 
@@ -229,9 +270,9 @@ class Model:
                             sum(sum(self._vars['x', batch, node_i, node_j] \
                             for node_j in subset[(subset.index(node_i)+1):]) for node_i in subset) \
                             <= len(subset) 
-                        self.gurobi_model.addConstr(constraint, name)
+                        super().addConstr(constraint, name)
             
-            self.gurobi_model.update()
+            super().update()
              
             
             # Constraint 3.32 in the master thesis
@@ -239,13 +280,13 @@ class Model:
             constraint = \
                 sum(v_a * self._vars['y', batch, order] for order in orders) \
                 <= self._vars['b', batch] * self._constants['VOL']
-            self.gurobi_model.addConstr(constraint, name)
+            super().addConstr(constraint, name)
             
             # Constraint 3.30 in the master thesis
             name = "constraint:" + '3.30' + ", batch: " + str(batch)
             constraint = self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch]
-            self.gurobi_model.addConstr(constraint, name)
-            self.gurobi_model.update()
+            super().addConstr(constraint, name)
+            super().update()
 
             # Constraint 3.29 in the master thesis
             node_i = 1
@@ -256,19 +297,19 @@ class Model:
                     sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i-1)]) \
                     + sum(self._vars['x', batch, self._nodes[node_i], node_j] for node_j in self._nodes[(node_i+1):]) \
                     == 2 * self._vars['B', batch, self._nodes[node_i]]
-                self.gurobi_model.addConstr(constraint, name)
+                super().addConstr(constraint, name)
                 
                 node_i += 1
                 if (node_i >= number_nodes):
                     node_i = node_i - 1
-            self.gurobi_model.update()
+            super().update()
 
         for order in orders:
             # Constraint 3.33 in the master thesis
             name = "constraint:" + '3.33' + ", order: " + str(order)
             constraint = sum(self._vars['y', batch_k, order] for batch_k in range(self._constants['max_n_batches'])) == 1
-            self.gurobi_model.addConstr(constraint, name)
-            self.gurobi_model.update()
+            super().addConstr(constraint, name)
+            super().update()
 
             # Constraint 3.34 in the master thesis
             for batch in range(self._constants['max_n_batches']):
@@ -276,43 +317,8 @@ class Model:
                     name = "constraint:" + '3.34' + ", order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
                     constraint = \
                         self._vars['B', batch, node] >= self._vars['y', batch, order] * self._constants['S', order, node]
-                    self.gurobi_model.addConstr(constraint, name)
-                self.gurobi_model.update()
+                    super().addConstr(constraint, name)
+                super().update()
 
-    def _subtourelim(self, model, where):
-        print('_subtourelim is called')
-        if where == GRB.callback.MIPSOL:
-            # for every batch make a list of edges used in that batch
-            used_nodes = [[] for i in range(self.constants['max_n_batches'])]
-            for batch_k in range(self.constants['max_n_batches']):
-                for i in range(len(self._nodes)): 
-                    # TODO: it might matter that we use self._vars 
-                    # and not self.gurobi_model._vars at the gurobi example uses
-                    sol_batch_k = self.gurobi_model \
-                                  .cbGetSolution( \
-                                    [ self._vars['x', batch_k, self._nodes[i], self._nodes[j]] \
-                                      for j in range(len(self._nodes[i+1:])) \
-                                    ] \
-                                    )
-                    print('sol_batch_k: ', sol_batch_k)
-                    print('type sol_batch_k: ', type(sol_batch_k))
-                                  
-                    #used_nodes[batch_k] += \
-                    #    [ (self._nodes[i], self._nodes[j]) \
-                    #      for j in range(len(self._nodes[i+1:])) \
-                    #      if sol_batch_k[self._nodes[j]] > 0.5
-                    #    ]
-
-        """                
-            for i in range(n):
-                sol = model.cbGetSolution([model._vars[i,j] for j in range(n)])
-                selected += [(i,j) for j in range(n) if sol[j] > 0.5]
-            # find the shortest cycle in the selected edge list
-            tour = subtour(selected)
-            if len(tour) < n:
-                # add a subtour elimination constraint
-                expr = 0
-                for i in range(len(tour)):
-                    for j in range(i+1, len(tour)):
-                        expr += model._vars[tour[i], tour[j]]
-                model.cbLazy(expr <= len(tour)-1)
+    #def optimize():
+        """Overwrite optimize function, do that subtour constraints is used."""

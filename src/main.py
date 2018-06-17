@@ -1,5 +1,5 @@
 from infrastructure import read_orders, Batch, Order, Pick, Warehouse
-from model import Model
+from model import Model, subtourelim
 
 from datetime import datetime
 
@@ -28,7 +28,8 @@ def main():
 
     model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
 
-    model.gurobi_model.optimize(model.subtourelim)
+    model.params.LazyConstraints = 1
+    model.optimize(subtourelim)
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
