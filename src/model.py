@@ -6,33 +6,6 @@ NAME_START_NODE = "F-20-28"
 NAME_END_NODE = "F-20-27"
 
 
-def find_subsets(S):
-    """Helper function which returns a set of all the subsets of set S.
-    
-    Args:
-        S (set or array): the set of which you want to output all the subsets.
-    
-    Returns:
-        set: returns a set of all subsets.
-    
-    Example:
-    >>> find_subsets(("1" ,"2" ,"3"))
-    {'1', ('1', '3'), '3', ('1', '2'), (), ('2', '3'), '2'}
-    """
-    set_all_subsets = set()
-
-    for i in range(len(S)):
-        subset_with_length_i = set(itertools.combinations(S, i))
-        
-        if i == 1:
-            for element in S:
-                set_all_subsets.add(element)
-        else:
-            for subset in subset_with_length_i:
-                set_all_subsets.add(subset)
-    
-    return set_all_subsets
-
 def _max_order_size(orders):
     """Returns number of items in largest order"""
     max_order_size = 0
@@ -43,11 +16,6 @@ def _max_order_size(orders):
 
 def subtourelim(model, where):
     if where == gp.GRB.callback.MIPSOL:
-        
-        print()
-        print()
-        print('_subtourelim is called')
-        print()
  
         # for every batch, make a list of USED edges
         used_edges = [[] for i in range(model._constants['max_n_batches'])]
@@ -75,7 +43,6 @@ def subtourelim(model, where):
                     used_nodes[batch_k].append(node)
 
             print()
-            print('before if adding')
             print('items positions in batch ', batch_k, ': ', used_nodes[batch_k])
 
             # only nodes where items are picked have been added to used_nodes[batch_k]
@@ -86,23 +53,19 @@ def subtourelim(model, where):
         # all necessary info is now attained in order to find subtours
         # time to add constraints to prohibit the subtours
         for batch_k in range(model._constants['max_n_batches']):
-            #print()
-            #print('batch_k: ', batch_k, 'used edges: ', used_edges[batch_k])
-            #print()
-
             if len(used_nodes[batch_k]) > 0: # then check/correct the check the cycle
                 # function subtour finds the shortest cycle per batch
                 tour = _subtour(used_edges[batch_k])
-                
-                print('tour: ', tour)
-                print('tour type: ', type(tour))
-                
+    
                 if tour != None and len(tour) < len(used_nodes[batch_k]): # a subtour exists
+                    print('tour: ', tour)
                     print('adding a lazy constraint')
                     expr = 0
                     for node_i, node_j in tour:
                         expr += model._vars['x', batch_k, node_i, node_j]
                     model.cbLazy(expr <= len(tour)-1)
+                    # TODO: Maybe add this constraint for every batch?
+                    # so that the same subtour isn't just created in another batch
 
 def _subtour(edges):
     """Given a list of edges, finds the shortest subtour
