@@ -1,5 +1,5 @@
 from infrastructure import read_orders, Batch, Order, Pick, Warehouse
-from model import Model, subtourelim
+from model import Model
 
 from datetime import datetime
 
@@ -7,7 +7,7 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 500
+NUM_PICKS = 70
 MAX_N_BATCHES = None
 
 
@@ -28,8 +28,7 @@ def main():
 
     model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
 
-    model.params.LazyConstraints = 1
-    model.optimize(subtourelim)
+    model.optimize()
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))

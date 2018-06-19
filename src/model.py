@@ -14,7 +14,7 @@ def _max_order_size(orders):
             max_order_size = orders[order].num_picks()
     return max_order_size
 
-def subtourelim(model, where):
+def _subtourelim(model, where):
     if where == gp.GRB.callback.MIPSOL:
  
         # for every batch, make a list of USED edges
@@ -384,7 +384,7 @@ class Model(gp.Model):
             super().addConstr(constraint, name)
             super().update()
 
-            # Constraint 3.34 in the master thesis, "Visit node in batch constraint"
+            # Constraint 3.34 in the master thesis, "Visit node in batch"
             for batch in range(self._constants['max_n_batches']):
                 for node in self._nodes:
                     name = "constraint:" + '3.34' + ", order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
@@ -393,5 +393,7 @@ class Model(gp.Model):
                     super().addConstr(constraint, name)
                 super().update()
 
-    #def optimize():
-        """Overwrite optimize function, do that subtour constraints is used."""
+    def optimize(self):
+        """Overwrite optimize function, so that subtour constraints is used."""
+        self.params.LazyConstraints = 1
+        super().optimize(_subtourelim)
