@@ -24,7 +24,7 @@ def find_subsets(S):
     for i in range(len(S)):
         subset_with_length_i = set(itertools.combinations(S, i))
         
-        if (i == 1):
+        if i == 1:
             for element in S:
                 set_all_subsets.add(element)
         else:
@@ -44,25 +44,20 @@ def _max_order_size(orders):
 def subtourelim(model, where):
     if where == gp.GRB.callback.MIPSOL:
         
+        print()
+        print()
         print('_subtourelim is called')
-        for key, content in model._vars.items():
-            print('key: ', key, 'content: ', content)
-        print('nodes: ', model._nodes)
+        print()
  
-        # for every batch, make a list of edges
+        # for every batch, make a list of USED edges
         used_edges = [[] for i in range(model._constants['max_n_batches'])]
         for batch_k in range(model._constants['max_n_batches']):
             batch_k_vars = list()
             for i in range(len(model._nodes)-1):
-                for j in range(i+1, len(model._nodes)):
-                    
-                    print('key: ', 'x', batch_k, model._nodes[i], model._nodes[j])
-                    
+                for j in range(i+1, len(model._nodes)):                
                     var = model._vars['x', batch_k, model._nodes[i], model._nodes[j]]
                     batch_k_vars.append(var)
             sol_batch_k = model.cbGetSolution(batch_k_vars)
-            
-            print('sol_batch_k: ', sol_batch_k)
             
             sol_batck_k_index = 0
             for i in range(len(model._nodes)-1):
@@ -70,8 +65,6 @@ def subtourelim(model, where):
                     if sol_batch_k[sol_batck_k_index] > 0.5:
                         used_edges[batch_k].append((model._nodes[i], model._nodes[j]))
                     sol_batck_k_index += 1
-
-        print('used_edges: ', used_edges)  
 
         # for every batch, make a list of used nodes
         used_nodes = [[] for i in range(model._constants['max_n_batches'])]
@@ -81,37 +74,37 @@ def subtourelim(model, where):
                 if model.cbGetSolution(var) > 0.5: # then node is used
                     used_nodes[batch_k].append(node)
 
+            print()
+            print('before if adding')
+            print('items positions in batch ', batch_k, ': ', used_nodes[batch_k])
+
+            # only nodes where items are picked have been added to used_nodes[batch_k]
+            if len(used_nodes[batch_k]) > 0: # if picks in batch_k, then start and end nodes are also used
+                used_nodes[batch_k].append(NAME_START_NODE)
+                used_nodes[batch_k].append(NAME_END_NODE)
+
         # all necessary info is now attained in order to find subtours
         # time to add constraints to prohibit the subtours
         for batch_k in range(model._constants['max_n_batches']):
-            # function subtour finds the shortest cycle per batch
-            tour = _subtour(edges=used_edges[batch_k], n_nodes=len(used_nodes))
-            print('tour: ', tour)
-            print('tour type: ', type(tour))
-            """
-            if len(tour) < len(used_nodes[batch_k]):
-                # add a subtour elimination constraint
-                expr = 0
-                for i in range(len(tour)):
-                    for j in range(i+1, len(tour)):
-                        expr += model._vars['x', batch_k, tour[i], tour[j]]
-                model.cbLazy(expr <= len(tour)-1)
-            """
+            #print()
+            #print('batch_k: ', batch_k, 'used edges: ', used_edges[batch_k])
+            #print()
 
+            if len(used_nodes[batch_k]) > 0: # then check/correct the check the cycle
+                # function subtour finds the shortest cycle per batch
+                tour = _subtour(used_edges[batch_k])
+                
+                print('tour: ', tour)
+                print('tour type: ', type(tour))
+                
+                if tour != None and len(tour) < len(used_nodes[batch_k]): # a subtour exists
+                    print('adding a lazy constraint')
+                    expr = 0
+                    for node_i, node_j in tour:
+                        expr += model._vars['x', batch_k, node_i, node_j]
+                    model.cbLazy(expr <= len(tour)-1)
 
-            """                
-            # find the shortest cycle in the selected edge list
-            tour = subtour(selected)
-            if len(tour) < n:
-              # add a subtour elimination constraint
-              expr = 0
-              for i in range(len(tour)):
-                for j in range(i+1, len(tour)):
-                  expr += model._vars[tour[i], tour[j]]
-              model.cbLazy(expr <= len(tour)-1)
-            """
-
-def _subtour(edges, n_nodes):
+def _subtour(edges):
     """Given a list of edges, finds the shortest subtour
 
     Args:
@@ -120,8 +113,8 @@ def _subtour(edges, n_nodes):
                n_nodes (int): number of nodes the edges uses.
 
     Returns:
-        shortest_cycle (:obj: `list`): all egdes that make up the shortest cycle. Is of the
-                                       same tuple format as egdes.
+        shortest_cycle (:obj: `list`): list of all the egdes in the shortest cycle, 
+                                       or None if no cycle exists.
     
     Note: algorithm assumes the edges are tuples with int nodes, eg (node_i, node_j) is (1, 3)  
         where node_i and node_j are in range(0,n_nodes). As a consequence, the edges are converted
@@ -132,6 +125,10 @@ def _subtour(edges, n_nodes):
         nodes.add(node_i)
         nodes.add(node_j)
 
+
+    n_nodes = len(nodes)
+
+    # Convert node names to ints, because of alg
     num_to_node = dict()
     node_to_num = dict()
     for i, node in enumerate(nodes):
@@ -143,7 +140,7 @@ def _subtour(edges, n_nodes):
         edge_nums = node_to_num[node_i], node_to_num[node_j]
         edges_nums.append(edge_nums)
 
-    # algorithm (uses edges_nums)
+    # algorithm; detecting cycles
     visited = [False]*n_nodes
     cycles = []
     lengths = []
@@ -165,15 +162,42 @@ def _subtour(edges, n_nodes):
         if sum(lengths) == n_nodes:
             break
         break
+
+    # Delete to short cycles
+    indices_to_short_cycles = list()
+    for i in range(len(cycles)):
+        if len(cycles[i]) < 2:
+            indices_to_short_cycles.append(i)
+    for i in indices_to_short_cycles:
+        cycles.pop(i)
+        lengths.pop(i)
+
+    # return None if no cycles
+    if len(cycles) is 0:
+        return None
     
+    # Convert back to original node names
     shortest_cycle_nums = cycles[lengths.index(min(lengths))]
-    shortest_cycle = list()
-    for node_num_i, node_num_j in shortest_cycle_nums:
-        egde = num_to_node[node_num_i], num_to_node[node_num_j]
-        shortest_cycle.append(edge)
+    shortest_cycle_nodes = list()
 
-    return shortest_cycle
+    for node_num_i in shortest_cycle_nums:
+        node = num_to_node[node_num_i]
+        shortest_cycle_nodes.append(node)
 
+    # Repeat first node again, to make it start and finish
+    shortest_cycle_nodes.append(shortest_cycle_nodes[0])
+
+    # Convert back to list of edges
+    shortest_cycle_edges = list()
+    for i in range(len(shortest_cycle_nodes)-1):
+        if (shortest_cycle_nodes[i], shortest_cycle_nodes[i+1]) in edges:
+            egde = shortest_cycle_nodes[i], shortest_cycle_nodes[i+1]
+            shortest_cycle_edges.append(egde)
+        else:
+            edge = shortest_cycle_nodes[i+1], shortest_cycle_nodes[i]
+            shortest_cycle_edges.append(egde)
+
+    return shortest_cycle_edges
 
 
 class Model(gp.Model):
@@ -316,15 +340,17 @@ class Model(gp.Model):
         _vars = dict()
 
         # variable: x
-        # TODO: Is not this creating an empty last node_j
+        # TODO: Is not this creating an empty last node_j?
+        # TODO: Is there not a better way to handle empty batches? Big M eg. 
+        # Now always walking from start to end even when no nodes are collected.
         for batch_k in range(self._constants['max_n_batches']):
             for i, node_i in enumerate(self._nodes):
                 for node_j in self._nodes[(i+1):]:
                     name = 'x' + '^' + str(batch_k) + '_' + node_i + '_' + node_j
                     _vars['x', batch_k, node_i, node_j] = super().addVar(obj=dist[node_i][node_j],
                                                                          vtype=gp.GRB.BINARY,
-                                                                         name=name)
-                super().update()
+                                                                         name=name) 
+                super().update() # TODO: how often do we call super().update()
 
         # variable: y
         for order in orders:
@@ -359,26 +385,7 @@ class Model(gp.Model):
         v_a = 1
 
         for batch in range(self._constants['max_n_batches']):
-            # Constraint 3.31 in the master thesis
-            set_subsets = find_subsets(self._nodes)
-            for subset in set_subsets:
-                if subset != ():
-                    if (len(subset[0]) == 1):
-                        subset = [''.join(subset)]
-                        next
-                    else:
-                        subset = list(subset)
-
-                        name = "constraint:" + '3.31' + ", batch: " + str(batch) + ", subset: " + str(subset)
-                        constraint = \
-                            sum(sum(self._vars['x', batch, node_i, node_j] \
-                            for node_j in subset[(subset.index(node_i)+1):]) for node_i in subset) \
-                            <= len(subset) 
-                        super().addConstr(constraint, name)
-            
-            super().update()
-            
-            # Constraint 3.32 in the master thesis
+            # Constraint 3.32 in the master thesis, "Volume Constraint"
             name = "constraint:" + '3.32' + ", batch: " + str(batch)
             constraint = \
                 sum(v_a * self._vars['y', batch, order] for order in orders) \
@@ -391,7 +398,7 @@ class Model(gp.Model):
             super().addConstr(constraint, name)
             super().update()
 
-            # Constraint 3.29 in the master thesis
+            # Constraint 3.29 in the master thesis, "Enter and leave constraint"
             node_i = 1
             number_nodes = len(self._nodes)
             for node in self._nodes:
@@ -408,13 +415,13 @@ class Model(gp.Model):
             super().update()
 
         for order in orders:
-            # Constraint 3.33 in the master thesis
+            # Constraint 3.33 in the master thesis, "Pick all orders"
             name = "constraint:" + '3.33' + ", order: " + str(order)
             constraint = sum(self._vars['y', batch_k, order] for batch_k in range(self._constants['max_n_batches'])) == 1
             super().addConstr(constraint, name)
             super().update()
 
-            # Constraint 3.34 in the master thesis
+            # Constraint 3.34 in the master thesis, "Visit node in batch constraint"
             for batch in range(self._constants['max_n_batches']):
                 for node in self._nodes:
                     name = "constraint:" + '3.34' + ", order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
