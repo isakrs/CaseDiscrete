@@ -1,9 +1,14 @@
 import gurobipy as gp
 import itertools
+import math
 
 
 NAME_START_NODE = "F-20-28"
 NAME_END_NODE = "F-20-27"
+
+
+# debug
+tours = list()
 
 
 def _max_order_size(orders):
@@ -42,9 +47,6 @@ def _subtourelim(model, where):
                 if model.cbGetSolution(var) > 0.5: # then node is used
                     used_nodes[batch_k].append(node)
 
-            print()
-            print('items positions in batch ', batch_k, ': ', used_nodes[batch_k])
-
             # only nodes where items are picked have been added to used_nodes[batch_k]
             if len(used_nodes[batch_k]) > 0: # if picks in batch_k, then start and end nodes are also used
                 used_nodes[batch_k].append(NAME_START_NODE)
@@ -58,14 +60,19 @@ def _subtourelim(model, where):
                 tour = _subtour(used_edges[batch_k])
     
                 if tour != None and len(tour) < len(used_nodes[batch_k]): # a subtour exists
-                    print('tour: ', tour)
+
+                    # debug
+                    print('is tour found earlier: ', tour in tours)
+                    tours.append(tour)
                     print('adding a lazy constraint')
-                    expr = 0
-                    for node_i, node_j in tour:
-                        expr += model._vars['x', batch_k, node_i, node_j]
-                    model.cbLazy(expr <= len(tour)-1)
-                    # TODO: Maybe add this constraint for every batch?
+                    
+                    # adding this subtour constraint for every batch
                     # so that the same subtour isn't just created in another batch
+                    for batch in range(model._constants['max_n_batches']):
+                        expr = 0
+                        for node_i, node_j in tour:
+                            expr += model._vars['x', batch, node_i, node_j]
+                        model.cbLazy(expr <= len(tour)-1)
 
 def _subtour(edges):
     """Given a list of edges, finds the shortest subtour
@@ -183,24 +190,25 @@ class Model(gp.Model):
         Superscripts are used before subscripts when indexing in dicts.
     """
 
-    def __init__(self, dist, orders, VOL=None, max_n_batches=None):
+    def __init__(self, dist, orders, volume=6, max_n_batches=None):
         """
         Args:
             orders (:obj:`dict` of :obj:`infrastructure.Order`): Dict with all orders.
                                                                  key: order_id, item: list of infrastructure.Order.
                                             dist (:obj: `dict`): dict of shortest distances, 
                                                                  between node i and node j, dist['i']['j'].
-                                          VOL (float, optional): Maximum number of items, ie max volume, that can 
-                                                                 fit on a workers tray. If VOL is not given (None), 
-                                                                 then it will be set to the size of the 
-                                                                 largest order (default).
+                                       volume (float, optional): Maximum number of items, ie max volume, that can 
+                                                                 fit on a workers tray. If volume is not given (None), 
+                                                                 then it will be set to 6 (default).
                                   max_n_batches (int, optional): Maximum number of batches (tours in the warehouse) 
                                                                  that is allowed. If not given (default), ie None, 
-                                                                 then it will be set to the total number of orders.
+                                                                 then it will be set to the ceil of the total number 
+                                                                 of orders divided by volume, ie ceil of 
+                                                                 num_orders/volume.
         """
         # set none gurobi types
         self._nodes, self._n_picks = self._used_nodes(orders)
-        self._constants = self._set_constants(orders, max_n_batches=max_n_batches)
+        self._constants = self._set_constants(orders, volume, max_n_batches=max_n_batches)
 
         # set gurobi types
         super().__init__()
@@ -233,7 +241,7 @@ class Model(gp.Model):
 
         return nodes, n_picks
 
-    def _set_constants(self, orders, VOL=None, max_n_batches=None):
+    def _set_constants(self, orders, volume, max_n_batches=None):
         """Sets all constant numbers for Model.
         
         Note:
@@ -242,12 +250,11 @@ class Model(gp.Model):
         Args:
                     orders (:obj: `dict`): Dict of all orders.
                                            key: order_id (str) and item: (list of infrastructure.Order)
-                    VOL (float, optional): Maximum number of items, ie max volume, that can fit on a workers tray.
-                                           If VOL is not given (None), then it will be set to the size of the 
-                                           largest order.
+                           volume (float): Maximum number of orders, ie max volume, that can fit on a workers tray.
             max_n_batches (int, optional): Maximum number of batches (tours in the warehouse) that is allowed. 
-                                           If not given (default), ie None, then it will be set to 
-                                           the total number of orders.
+                                           If not given (default), ie None, then it will be set to the ceil of
+                                           the total number of orders divided by volume, 
+                                           ie ceil of num_orders/volume.
         
         Returns:
              nodes (:obj: `dict`): dict with all Model constants
@@ -257,14 +264,12 @@ class Model(gp.Model):
         constants = dict()
 
         # constant VOL
-        if VOL is None:
-            constants['VOL'] = _max_order_size(orders)
-        else:
-            constants['VOL'] = VOL
+        constants['VOL'] = volume
 
         # constant max_n_batches
+        num_orders = len(orders)
         if max_n_batches is None:
-            constants['max_n_batches'] = len(orders)
+            constants['max_n_batches'] =  math.ceil(num_orders/volume)
         else: 
             constants['max_n_batches'] = max_n_batches
 
@@ -337,16 +342,17 @@ class Model(gp.Model):
 
         return _vars
 
-    def _set_constraints(self, orders):
+    def _set_constraints(self, orders, v_a=1):
         """Initialise all the gurobi constraints apart from the subtour constraint
+
         Args:
             orders (:obj: `dict`): Dict of all orders.
                                    key: order_id (str) and item: (list of infrastructure.Order)
+            v_a (float, optional): volume per order, default is 1.
+
         Returns:
             None: it serves as a void function where all the constraint are being set in the Gurobi model
         """
-        v_a = 1
-
         for batch in range(self._constants['max_n_batches']):
             # Constraint 3.32 in the master thesis, "Volume Constraint"
             name = "constraint:" + '3.32' + ", batch: " + str(batch)

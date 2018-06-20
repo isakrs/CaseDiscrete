@@ -7,8 +7,8 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 80
-MAX_N_BATCHES = None
+NUM_PICKS = 438 # first 100 orders
+VOL = 6
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
     start = datetime.now()
     print('Model start time: ', str(start))
 
-    model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
+    model = Model(dist, orders, volume=VOL)
 
     model.optimize()
 
