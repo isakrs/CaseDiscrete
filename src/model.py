@@ -61,6 +61,7 @@ def _subtourelim(model, where):
                     # TODO: Should we keep this print. Might be nice to have to see that 
                     # the model is still running.
                     print('adding a lazy constraint')
+                    
                     # adding this subtour constraint for every batch
                     # so that the same subtour isn't just created in another batch
                     for batch in range(model._constants['max_n_batches']):
