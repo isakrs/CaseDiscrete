@@ -397,3 +397,23 @@ class Model(gp.Model):
         """Overwrite optimize function, so that subtour constraints is used."""
         self.params.LazyConstraints = 1
         super().optimize(_subtourelim)
+
+    def solution_batches(self):
+        """Temporary function until nice print function is made."""
+        solution = super().getAttr('x', self._vars)
+        used_nodes = [[] for i in range(self._constants['max_n_batches'])]
+
+        print()
+
+        for batch in range(self._constants['max_n_batches']):
+            for node in self._nodes:
+                if solution['B', batch, node] > 0.5:
+                    used_nodes[batch].append(node)
+
+            print('batch: ', batch, 'items: ', used_nodes[batch])
+
+        print()
+
+        return used_nodes
+
+

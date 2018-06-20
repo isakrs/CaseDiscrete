@@ -7,7 +7,7 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 70
+NUM_PICKS = 80
 MAX_N_BATCHES = None
 
 
@@ -32,6 +32,8 @@ def main():
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
+
+    model.solution_batches()
 
     print('number of used nodes: ', len(model._nodes))
     print('number of variables: ', len(model._vars))
