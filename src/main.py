@@ -7,21 +7,15 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 438 # first 100 orders
+NUM_PICKS = 88 # first 100 orders is 438 picks
 VOL = 6
 
 
 def main():
     dist = Warehouse().read_distances(DIST_FILE)
-    print("Size of the dist: ", len(dist))
 
     orders = read_orders(ORDERS_FILE, num_picks=NUM_PICKS)
     print("Number of orders: ", len(orders))
-
-    sum_items = 0
-    for order_id, order in orders.items():
-        sum_items += order.num_picks()
-    print("Number of items: ", sum_items)
 
     start = datetime.now()
     print('Model start time: ', str(start))

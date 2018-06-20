@@ -20,9 +20,9 @@ def _max_order_size(orders):
     return max_order_size
 
 def _subtourelim(model, where):
+    """This function adds a subtour constraint to model if one exists."""
     if where == gp.GRB.callback.MIPSOL:
- 
-        # for every batch, make a list of USED edges
+        # for every batch, make a list of used edges
         used_edges = [[] for i in range(model._constants['max_n_batches'])]
         for batch_k in range(model._constants['max_n_batches']):
             batch_k_vars = list()
@@ -31,13 +31,12 @@ def _subtourelim(model, where):
                     var = model._vars['x', batch_k, model._nodes[i], model._nodes[j]]
                     batch_k_vars.append(var)
             sol_batch_k = model.cbGetSolution(batch_k_vars)
-            
-            sol_batck_k_index = 0
+            sol_batch_k_index = 0
             for i in range(len(model._nodes)-1):
                 for j in range(i+1, len(model._nodes)):
-                    if sol_batch_k[sol_batck_k_index] > 0.5:
+                    if sol_batch_k[sol_batch_k_index] > 0.5:
                         used_edges[batch_k].append((model._nodes[i], model._nodes[j]))
-                    sol_batck_k_index += 1
+                    sol_batch_k_index += 1
 
         # for every batch, make a list of used nodes
         used_nodes = [[] for i in range(model._constants['max_n_batches'])]
@@ -48,7 +47,7 @@ def _subtourelim(model, where):
                     used_nodes[batch_k].append(node)
 
             # only nodes where items are picked have been added to used_nodes[batch_k]
-            if len(used_nodes[batch_k]) > 0: # if picks in batch_k, then start and end nodes are also used
+            if len(used_nodes[batch_k]) > 0: # if picks in batch_k, then start and end nodes as well
                 used_nodes[batch_k].append(NAME_START_NODE)
                 used_nodes[batch_k].append(NAME_END_NODE)
 
@@ -58,14 +57,10 @@ def _subtourelim(model, where):
             if len(used_nodes[batch_k]) > 0: # then check/correct the check the cycle
                 # function subtour finds the shortest cycle per batch
                 tour = _subtour(used_edges[batch_k])
-    
-                if tour != None and len(tour) < len(used_nodes[batch_k]): # a subtour exists
-
-                    # debug
-                    print('is tour found earlier: ', tour in tours)
-                    tours.append(tour)
+                if tour != None and len(tour) < len(used_nodes[batch_k]): # then a subtour exists
+                    # TODO: Should we keep this print. Might be nice to have to see that 
+                    # the model is still running.
                     print('adding a lazy constraint')
-                    
                     # adding this subtour constraint for every batch
                     # so that the same subtour isn't just created in another batch
                     for batch in range(model._constants['max_n_batches']):
@@ -80,7 +75,6 @@ def _subtour(edges):
     Args:
         edges (:obj: `list`): list of edges. Each edge is written as a tuple (node_i, node_j)
                               where node_i and node_j are strings, eg. ('F-20-28', 'F-20-27')
-               n_nodes (int): number of nodes the edges uses.
 
     Returns:
         shortest_cycle (:obj: `list`): list of all the egdes in the shortest cycle, 
@@ -214,6 +208,7 @@ class Model(gp.Model):
         super().__init__()
         self._vars = self._set_variables(dist, orders)
         self._set_constraints(orders)
+        self.params.LazyConstraints = 1 # lazy constraints are used
 
     def _used_nodes(self, orders):
         """Finds the used nodes and number of picks in the orders input.
@@ -308,9 +303,6 @@ class Model(gp.Model):
         _vars = dict()
 
         # variable: x
-        # TODO: Is not this creating an empty last node_j?
-        # TODO: Is there not a better way to handle empty batches? Big M eg. 
-        # Now always walking from start to end even when no nodes are collected.
         for batch_k in range(self._constants['max_n_batches']):
             for i, node_i in enumerate(self._nodes):
                 for node_j in self._nodes[(i+1):]:
@@ -318,27 +310,25 @@ class Model(gp.Model):
                     _vars['x', batch_k, node_i, node_j] = super().addVar(obj=dist[node_i][node_j],
                                                                          vtype=gp.GRB.BINARY,
                                                                          name=name) 
-                super().update() # TODO: how often do we call super().update()
 
         # variable: y
         for order in orders:
             for batch in range(self._constants['max_n_batches']):
                 name = 'y' + '^' + str(batch) + '_' + str(order)
                 _vars['y', batch, order] = super().addVar(vtype=gp.GRB.BINARY, name=name)
-            super().update()
 
         # variable: b
         for batch in range(self._constants['max_n_batches']):
             name = 'b' + '_' + str(batch)
             _vars['b', batch] = super().addVar(vtype=gp.GRB.BINARY, name=name)
-        super().update()
 
         # variable: B
         for batch in range(self._constants['max_n_batches']):
             for node in self._nodes:
                 name = 'B' + '^' + str(batch) + '_' + node
                 _vars['B', batch, node] = super().addVar(vtype=gp.GRB.BINARY, name=name)
-            super().update()
+
+        super().update() # update gurobi model with all vars
 
         return _vars
 
@@ -365,7 +355,6 @@ class Model(gp.Model):
             name = "constraint:" + '3.30' + ", batch: " + str(batch)
             constraint = self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch]
             super().addConstr(constraint, name)
-            super().update()
 
             # Constraint 3.29 in the master thesis, "Enter and leave constraint"
             node_i = 1
@@ -381,14 +370,13 @@ class Model(gp.Model):
                 node_i += 1
                 if (node_i >= number_nodes):
                     node_i = node_i - 1
-            super().update()
 
         for order in orders:
             # Constraint 3.33 in the master thesis, "Pick all orders"
             name = "constraint:" + '3.33' + ", order: " + str(order)
             constraint = sum(self._vars['y', batch_k, order] for batch_k in range(self._constants['max_n_batches'])) == 1
             super().addConstr(constraint, name)
-            super().update()
+            #super().update()
 
             # Constraint 3.34 in the master thesis, "Visit node in batch"
             for batch in range(self._constants['max_n_batches']):
@@ -397,11 +385,11 @@ class Model(gp.Model):
                     constraint = \
                         self._vars['B', batch, node] >= self._vars['y', batch, order] * self._constants['S', order, node]
                     super().addConstr(constraint, name)
-                super().update()
+
+        super().update() # update gurobi model with all constraints
 
     def optimize(self):
         """Overwrite optimize function, so that subtour constraints is used."""
-        self.params.LazyConstraints = 1
         super().optimize(_subtourelim)
 
     def solution_batches(self):
@@ -417,6 +405,7 @@ class Model(gp.Model):
                     used_nodes[batch].append(node)
 
             print('batch: ', batch, 'items: ', used_nodes[batch])
+            print()
 
         print()
 
