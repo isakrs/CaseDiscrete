@@ -1,4 +1,4 @@
-from infrastructure import read_orders, Batch, Order, Pick, Warehouse, read_solution
+from infrastructure import read_orders, Batch, Order, Pick, Warehouse, get_model_solution, to_csv
 from model import Model
 
 from datetime import datetime
@@ -6,12 +6,13 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 10
+NUM_PICKS = 2
 MAX_N_BATCHES = 2
 
 def test():
-    test_tsp()
-    test_more_batches()
+    test1, test2 = test_tsp()
+    #test_more_batches()
+    to_csv("tsp_test.csv", test1, test2)
     return ""
 
 def test_more_batches():
@@ -43,7 +44,7 @@ def test_more_batches():
 
         model.gurobi_model.optimize()
 
-        current_solution = read_solution(model, dist)
+        current_solution = get_model_solution(model, dist)
 
         num_batches = len(current_solution)
 
@@ -61,7 +62,7 @@ def test_more_batches():
         else:
             MAX_N_BATCHES = MAX_N_BATCHES + 1
         
-    return ""
+    return current_solution, model
 
 def test_tsp():
     MAX_N_BATCHES = 1
@@ -77,6 +78,7 @@ def test_tsp():
     sum_items = 0
     for order_id, order in orders.items():
         sum_items += order.num_picks()
+
     print("Number of items: ", sum_items)
 
     start = datetime.now()
@@ -86,7 +88,7 @@ def test_tsp():
 
     model.gurobi_model.optimize()
 
-    read_solution(model, dist)
+    solution = get_model_solution(model, dist)
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
@@ -94,6 +96,11 @@ def test_tsp():
     print('number of used nodes: ', len(model._nodes))
     print('number of variables: ', len(model._vars))
     print('number of constants: ', len(model._constants))
+
+    #if len(solution[0].route)-1 > NUM_PICKS + 2:
+    #    print("Warning: The number of edges is ", len(solution[0].route - 1), "and is exceeding the number of picks (", NUM_PICKS + 2, ") i.e. a circle is being made in the graph.")
+
+    return solution, model
 
 if __name__ == '__main__':
     test()

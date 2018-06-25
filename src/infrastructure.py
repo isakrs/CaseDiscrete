@@ -1,14 +1,33 @@
 import csv
 import gurobipy as gp
 
-def read_solution(model, dist):
-    """A global function which reads the solution of the model. It should be used in order to obtain all the relevant data of the solution
+def to_csv(file_name, solution, model):
+    
+    with open(file_name, 'w') as csvfile:
+        fieldnames = ['route', 'distances']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
+        writer.writeheader()
+
+        for batch in solution:
+            route_length = len(batch.route)
+            distances_length = len(batch.distances)
+            print(len(solution))
+            print(route_length)
+            print(distances_length)
+            for node in range(route_length):
+                if (node < route_length / 2):
+                    writer.writerow({'route': batch.route[node], 'distances': batch.distances[node]})
+                else:
+                    writer.writerow({'route': batch.route[node], 'distances': "#####"})
+                    
+    return ""
+
+def get_model_solution(model, dist):
+    """A global function which reads the solution of the model. It should be used in order to obtain all the relevant data of the solution
     Args: model (Model): the model used to obtain the optimal solution
           dist (dictionary): the distance matrix from Warehouse.dist
-
           Returns: A list of Batch objects 
-
     """
     batches = []
     curr_batch = -1
@@ -39,15 +58,12 @@ def read_orders(data_file, num_picks=None):
     """Function which reads a csv with the orders (example is dataClient.csv)
     and converts the data into an array of Orders (the order id is the same as the index of the array);
     each order contains Picks, which are populated with the data.
-
     Args:
                  data_file (string): name of the csv file.
         num_picks (float, optional): max overall total number of items, ie picks, that should be read 
                                      from the csv file.
-
     Returns:
         orders: dict of order objects.
-
     Example:
     >>> orders = read_data_global("dataClient.csv")
     >>> len(orders) #get the number of all orders
@@ -119,10 +135,8 @@ class Batch:
 
     def read_route(self, node_i, node_j):
         """A member function of the class Batch, which takes two nodes as insput and populates the route vector with the nodes
-
            Args: node_i (pick._warehouse_location): the first node of the route
                  node_j (pick._warehouse_location): the second node of the route
-
            Returns: 
         """
         self.route.append(node_i)
@@ -131,15 +145,13 @@ class Batch:
 
     def read_distance(self, node_i, node_j, dist):
         """A member function of the class Batch, which takes two nodes as insput and populates the distance vector with the distances
-
            Args: node_i (pick._warehouse_location): the first node of the route
                  node_j (pick._warehouse_location): the second node of the route
-
            Returns: 
         """
-            distance = dist[node_i][node_j]
-            self.distances.append(distance)
-            print(self.distances)
+        distance = dist[node_i][node_j]
+        self.distances.append(distance)
+        print(self.distances)
         
             
 
@@ -152,22 +164,18 @@ class Warehouse:
     def read_distances(self, data_file):
         """Function which reads the csv of the distances between the nodes and
            returns a dictionary of dictionaries with keys of the node id
-
            Args:
                data_file (string): name of the csv file.
            
            Returns:
                self.dist: distances between the nodes.
-
            Example:
-
            >>> warehouse = Warehouse() #initialize warehouse object
            >>> warehouse.read_distances("test.csv") #read the distances
            >>> warehouse.dist["a"] #print all the distances from node "a"
            {'b': '23', 'c': '4', 'a': '5'}
            >>> warehouse.dist["a"]["b"] #get the distance between node "a" and "b"
            '23'
-
         """
         #open the file
         with open(data_file, 'r') as datafile:

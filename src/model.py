@@ -56,7 +56,7 @@ class Model:
         Superscripts are used before subscripts when indexing in dicts.
     """
 
-    def __init__(self, dist, orders, VOL=None, max_n_batches=None):
+    def __init__(self, dist, orders, VOL=6, max_n_batches=None):
         """
         Args:
             orders (:obj:`dict` of :obj:`infrastructure.Order`): Dict with all orders.
