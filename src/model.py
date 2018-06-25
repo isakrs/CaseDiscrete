@@ -389,8 +389,19 @@ class Model(gp.Model):
 
         super().update() # update gurobi model with all constraints
 
-    def optimize(self):
-        """Overwrite optimize function, so that subtour constraints is used."""
+    def optimize(self, MIPGap=None):
+        """Overwrite optimize function, so that subtour constraints is used.
+
+        Args:
+            MIPGap (float, optional): Default value:  1e-4
+                                      Minimum value:  0
+                                      Maximum value:  Infinity
+                                      The MIP solver will terminate (with an optimal result) when 
+                                      the gap between the lower and upper objective bound is less than 
+                                      MIPGap times the absolute value of the upper bound.
+        """
+        if MIPGap is not None:
+            self.Params.MIPGap = MIPGap
         super().optimize(_subtourelim)
 
     def solution_batches(self):

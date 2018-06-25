@@ -7,8 +7,10 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 88 # first 100 orders is 438 picks
-VOL = 6
+NUM_PICKS = 438 # first 100 orders is 438 picks
+VOL = 6         # max number of orders on tray
+
+MIPGAP = 1000   # 1000 means, 1000 mm (1 meter) away from optimial solution
 
 
 def main():
@@ -22,7 +24,7 @@ def main():
 
     model = Model(dist, orders, volume=VOL)
 
-    model.optimize()
+    model.optimize(MIPGap=MIPGAP)
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
