@@ -1,5 +1,5 @@
 # Data Structures
-Main classes are `Pick`, `Order`, `Batch` are `Warehouse`.
+Main classes are `Pick`, `Order`, `Batch` are `Warehouse` to discribe the provided data. Main class for optimization is `Model`.
 
 ### `Pick`
 Should hold all about a pick in an order, eg at least:
