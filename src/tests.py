@@ -6,7 +6,7 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 2
+NUM_PICKS = 3
 MAX_N_BATCHES = 2
 
 def test():

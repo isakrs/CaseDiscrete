@@ -12,9 +12,7 @@ def to_csv(file_name, solution, model):
         for batch in solution:
             route_length = len(batch.route)
             distances_length = len(batch.distances)
-            print(len(solution))
-            print(route_length)
-            print(distances_length)
+            writer.writerow({'route': "######", 'distances': "#####"})
             for node in range(route_length):
                 if (node < route_length / 2):
                     writer.writerow({'route': batch.route[node], 'distances': batch.distances[node]})
@@ -37,6 +35,9 @@ def get_model_solution(model, dist):
         for node_i in model._nodes:
             for node_j in model._nodes[(index_i +1):]:
                 a_var_reference = model.gurobi_model.getVarByName('x' + '^' + str(batch) + '_' + node_i + '_' + node_j)
+
+                #test_y = model.gurobi_model.getVarByName('y' + '^' + str(batch) + '_' + str(order))
+                test_b = model.gurobi_model.getVarByName('b' + '_' + str(batch))
                 #if x_k_i_j = 1 and if the current batch does not belong to the saved one then create a new Batch in the list
                 #and save the route and distance
                 if a_var_reference.X == 1 and batch != curr_batch:
@@ -49,6 +50,7 @@ def get_model_solution(model, dist):
                 elif a_var_reference.X == 1:
                     batches[index].read_route(node_i, node_j)
                     batches[index].read_distance(node_i, node_j, dist)
+                print(test_b)
             index_i += 1
     print("Number of batches: ", len(batches))
     return batches
@@ -139,8 +141,20 @@ class Batch:
                  node_j (pick._warehouse_location): the second node of the route
            Returns: 
         """
-        self.route.append(node_i)
-        self.route.append(node_j)
+
+        if self.route == []:
+            self.route.append(node_i)
+            self.route.append(node_j)
+        elif node_i in self.route:
+            if self.route[0] == node_i:
+                self.route.insert(0, node_j)
+            elif self.route[len(self.route)-1] == node_i:
+                self.route.append(node_j)
+        elif node_j in self.route:
+            if self.route[0] == node_j:
+                self.route.insert(0, node_i)
+            elif self.route[len(self.route)-1] == node_j:
+                self.route.append(node_i)
         print(self.route)
 
     def read_distance(self, node_i, node_j, dist):

@@ -1,4 +1,4 @@
-from infrastructure import read_orders, Batch, Order, Pick, Warehouse, read_solution
+from infrastructure import read_orders, Batch, Order, Pick, Warehouse, get_model_solution
 from model import Model
 
 from datetime import datetime
@@ -30,7 +30,7 @@ def main():
 
     model.gurobi_model.optimize()
 
-    read_solution(model, dist)
+    get_model_solution(model, dist)
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))

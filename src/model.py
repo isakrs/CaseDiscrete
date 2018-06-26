@@ -107,7 +107,7 @@ class Model:
     def get_variables():
         return _vars
 
-    def _set_constants(self, orders, VOL=None, max_n_batches=None):
+    def _set_constants(self, orders, VOL=6, max_n_batches=None):
         """Sets all constant numbers for Model.
         Note:
             Convention: superscripts are used before subscripts when indexing in dicts.
@@ -229,27 +229,31 @@ class Model:
                         subset = list(subset)
 
                         name = "constraint:" + '3.31' + ", batch: " + str(batch) + ", subset: " + str(subset)
+                        print(name)
                         constraint = \
                             sum(sum(self._vars['x', batch, node_i, node_j] \
                             for node_j in subset[(subset.index(node_i)+1):]) for node_i in subset) \
-                            <= len(subset) 
+                            <= len(subset) - 1
+                        print(constraint)
                         self.gurobi_model.addConstr(constraint, name)
             
-            self.gurobi_model.update()
+                    self.gurobi_model.update()
              
             
             # Constraint 3.32 in the master thesis
-            name = "constraint:" + '3.32' + ", batch: " + str(batch)
+            name = "constraint:" + '3.32' + ", batch: " + str(batch) 
             constraint = \
                 sum(v_a * self._vars['y', batch, order] for order in orders) \
                 <= self._vars['b', batch] * self._constants['VOL']
             self.gurobi_model.addConstr(constraint, name)
             
-            # Constraint 3.30 in the master thesis
-            name = "constraint:" + '3.30' + ", batch: " + str(batch)
-            constraint = self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch]
-            self.gurobi_model.addConstr(constraint, name)
-            self.gurobi_model.update()
+##            # Constraint 3.30 in the master thesis
+##            name = "constraint:" + '3.30' + ", batch: " + str(batch)
+##            print(name)
+##            constraint = self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch]
+##            print(constraint)
+##            self.gurobi_model.addConstr(constraint, name)
+##            self.gurobi_model.update()
 
             # Constraint 3.29 in the master thesis
             node_i = 1
