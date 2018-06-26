@@ -44,12 +44,10 @@ def get_model_solution(model, dist):
                     batches.append(Batch())
                     curr_batch = batch
                     index += 1
-                    batches[index].read_route(node_i, node_j)
-                    batches[index].read_distance(node_i, node_j, dist)
+                    batches[index].read_route(node_i, node_j, dist)
                 #if the batch is not new then just store the route and distance in the current batch
                 elif a_var_reference.X == 1:
-                    batches[index].read_route(node_i, node_j)
-                    batches[index].read_distance(node_i, node_j, dist)
+                    batches[index].read_route(node_i, node_j, dist)
                 print(test_b)
             index_i += 1
     print("Number of batches: ", len(batches))
@@ -135,36 +133,39 @@ class Batch:
         self.distances = []
         self.total_distance = 0
 
-    def read_route(self, node_i, node_j):
+    def read_route(self, node_i, node_j, dist):
         """A member function of the class Batch, which takes two nodes as insput and populates the route vector with the nodes
            Args: node_i (pick._warehouse_location): the first node of the route
                  node_j (pick._warehouse_location): the second node of the route
            Returns: 
         """
 
+        distance = dist[node_i][node_j]
+
         if self.route == []:
             self.route.append(node_i)
             self.route.append(node_j)
+
+            self.distances.append(distance)
         elif node_i in self.route:
             if self.route[0] == node_i:
                 self.route.insert(0, node_j)
+
+                self.distances.insert(0, distance)
             elif self.route[len(self.route)-1] == node_i:
                 self.route.append(node_j)
+
+                self.distances.append(distance)
         elif node_j in self.route:
             if self.route[0] == node_j:
                 self.route.insert(0, node_i)
+
+                self.distances.append(distance)
             elif self.route[len(self.route)-1] == node_j:
                 self.route.append(node_i)
-        print(self.route)
 
-    def read_distance(self, node_i, node_j, dist):
-        """A member function of the class Batch, which takes two nodes as insput and populates the distance vector with the distances
-           Args: node_i (pick._warehouse_location): the first node of the route
-                 node_j (pick._warehouse_location): the second node of the route
-           Returns: 
-        """
-        distance = dist[node_i][node_j]
-        self.distances.append(distance)
+                self.distances.append(distance)
+        print(self.route)
         print(self.distances)
         
             
