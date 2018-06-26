@@ -1,10 +1,10 @@
 import csv
 import gurobipy as gp
 
-def to_csv(file_name, solution, model):
+def to_csv(file_name, solution, model, error_message):
     
     with open(file_name, 'w') as csvfile:
-        fieldnames = ['route', 'distances']
+        fieldnames = ['batch', 'route', 'distances', 'total distance', 'Error']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
@@ -12,15 +12,15 @@ def to_csv(file_name, solution, model):
         for batch in solution:
             route_length = len(batch.route)
             distances_length = len(batch.distances)
-            writer.writerow({'route': "######", 'distances': "#####"})
-            for node in range(route_length):
-                if (node < route_length / 2):
-                    writer.writerow({'route': batch.route[node], 'distances': batch.distances[node]})
-                else:
-                    writer.writerow({'route': batch.route[node], 'distances': "#####"})
-                    
-    return ""
+            writer.writerow({'batch': batch,'route': batch.route, 'distances': batch.distances,
+                             'total distance': batch.total_distance, 'Error': error_message})
+            
+        #fieldnames = ['Error: ']
+        #writer = csv.DictWriter(csvfile, fieldnames= fieldnames)
+        #writer.writeheader()
+        #writer.writerow({'Error: ': error_message})
 
+                    
 def get_model_solution(model, dist):
     """A global function which reads the solution of the model. It should be used in order to obtain all the relevant data of the solution
     Args: model (Model): the model used to obtain the optimal solution
@@ -140,7 +140,14 @@ class Batch:
            Returns: 
         """
 
+##        if node_j == "F-20-27" or node_i == "F-20-28":
+##            node_temp = node_i
+##            node_i = node_j
+##            node_j = node_temp
+
         distance = dist[node_i][node_j]
+
+        self.total_distance = self.total_distance + distance
 
         if self.route == []:
             self.route.append(node_i)
@@ -167,9 +174,6 @@ class Batch:
                 self.distances.append(distance)
         print(self.route)
         print(self.distances)
-        
-            
-
 
 class Warehouse:
     #initialize the matrix which will be populated with the distances from csv

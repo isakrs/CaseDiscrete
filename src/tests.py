@@ -10,9 +10,8 @@ NUM_PICKS = 3
 MAX_N_BATCHES = 2
 
 def test():
-    test1, test2 = test_tsp()
+    test_tsp()
     #test_more_batches()
-    to_csv("tsp_test.csv", test1, test2)
     return ""
 
 def test_more_batches():
@@ -66,8 +65,8 @@ def test_more_batches():
 
 def test_tsp():
     MAX_N_BATCHES = 1
-    print(MAX_N_BATCHES)
-    print(NUM_PICKS)
+
+    error = ""
     
     dist = Warehouse().read_distances(DIST_FILE)
     print("Size of the dist: ", len(dist))
@@ -97,10 +96,23 @@ def test_tsp():
     print('number of variables: ', len(model._vars))
     print('number of constants: ', len(model._constants))
 
-    #if len(solution[0].route)-1 > NUM_PICKS + 2:
-    #    print("Warning: The number of edges is ", len(solution[0].route - 1), "and is exceeding the number of picks (", NUM_PICKS + 2, ") i.e. a circle is being made in the graph.")
+    if len(solution[0].route)-1 > NUM_PICKS + 2:
+        error = "The number of edges is " + str(len(solution[0].route - 1)) + "and is exceeding the number of picks (" + str(NUM_PICKS + 2) + ") i.e. a circle is being made in the graph."
 
-    return solution, model
+    if solution[0].route[0] != "F-20-27":
+        if error == "":
+            error = "The route is not starting at the starting node"
+        else:
+            error = error + ", " + "The route is not starting at the starting node"
+
+    if solution[0].route[len(solution[0].route)-1] != "F-20-28":
+        if error == "":
+            error = "The route is not ending at the end node."
+        else:
+            error = error + ", " + "The route is not ending at the end node."
+
+    to_csv("tsp_test.csv", solution, model, error)
+
 
 if __name__ == '__main__':
     test()
