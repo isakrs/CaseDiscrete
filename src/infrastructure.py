@@ -1,31 +1,51 @@
 import csv
 import gurobipy as gp
 
-def to_csv(file_name, solution, model, error_message):
-    
-    with open(file_name, 'w') as csvfile:
-        fieldnames = ['batch', 'route', 'distances', 'total distance', 'Error']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+def to_csv(file_name, solution, model, error_message, already_created):
+    """A global function which writes the results into a csv file. It needs the file name where to write and more importantly
+       the model and solution objects. The output is a csv file.
 
-        writer.writeheader()
+    Args: file_name (string): the name of the file
+          solution (list of batches): list of batches which is an output of read_solution function
+          model (Model): the model used to obtain the optimal solution
+          error_message (string): it throws the error messages which were collected during testing
+          already_created (bool): it indicates whether the csv file was already created or not
+    Returns: csv file in the same folder as the infrastructure.py
+    """
 
-        for batch in solution:
-            route_length = len(batch.route)
-            distances_length = len(batch.distances)
-            writer.writerow({'batch': batch,'route': batch.route, 'distances': batch.distances,
-                             'total distance': batch.total_distance, 'Error': error_message})
-            
-        #fieldnames = ['Error: ']
-        #writer = csv.DictWriter(csvfile, fieldnames= fieldnames)
-        #writer.writeheader()
-        #writer.writerow({'Error: ': error_message})
+    fieldnames = ['batch', 'number of nodes', 'route', 'distances', 'total distance', 'Error']
+    if not already_created:
+        with open(file_name, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            writer.writeheader()
+
+            for batch in solution:
+                route_length = len(batch.route)
+                distances_length = len(batch.distances)
+                writer.writerow({'batch': batch, 'number of nodes': route_length, 'route': batch.route, 'distances': batch.distances,
+                                 'total distance': batch.total_distance, 'Error': error_message})
+            writer.writerow({'batch': "----", 'number of nodes': "----", 'route': "-----", 'distances': "----",
+                                 'total distance': "----", 'Error': "----"})
+    else:
+        with open(file_name, 'a') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            for batch in solution:
+                route_length = len(batch.route)
+                distances_length = len(batch.distances)
+                writer.writerow({'batch': batch, 'number of nodes': route_length, 'route': batch.route, 'distances': batch.distances,
+                                 'total distance': batch.total_distance, 'Error': error_message})
+
+            writer.writerow({'batch': "----", 'number of nodes': "----", 'route': "-----", 'distances': "----",
+                                 'total distance': "----", 'Error': "----"})
 
                     
 def get_model_solution(model, dist):
     """A global function which reads the solution of the model. It should be used in order to obtain all the relevant data of the solution
     Args: model (Model): the model used to obtain the optimal solution
           dist (dictionary): the distance matrix from Warehouse.dist
-          Returns: A list of Batch objects 
+    Returns: A list of Batch objects 
     """
     batches = []
     curr_batch = -1
@@ -37,7 +57,6 @@ def get_model_solution(model, dist):
                 a_var_reference = model.gurobi_model.getVarByName('x' + '^' + str(batch) + '_' + node_i + '_' + node_j)
 
                 #test_y = model.gurobi_model.getVarByName('y' + '^' + str(batch) + '_' + str(order))
-                test_b = model.gurobi_model.getVarByName('b' + '_' + str(batch))
                 #if x_k_i_j = 1 and if the current batch does not belong to the saved one then create a new Batch in the list
                 #and save the route and distance
                 if a_var_reference.X == 1 and batch != curr_batch:
@@ -48,9 +67,9 @@ def get_model_solution(model, dist):
                 #if the batch is not new then just store the route and distance in the current batch
                 elif a_var_reference.X == 1:
                     batches[index].read_route(node_i, node_j, dist)
-                print(test_b)
             index_i += 1
-    print("Number of batches: ", len(batches))
+        if (index > -1):
+            batches[index].complete_route(dist)
     return batches
 
 
@@ -131,49 +150,93 @@ class Batch:
     def __init__(self):
         self.route = []
         self.distances = []
+        self.rest_of_circle = {}
         self.total_distance = 0
 
     def read_route(self, node_i, node_j, dist):
         """A member function of the class Batch, which takes two nodes as insput and populates the route vector with the nodes
+           by adding node_i or node_j (depends on which node is already there) to the route vector. If none of the nodes is in the
+           the vector then you populate the nodes into the self.rest_of_circle dictionary. That can happen, because the variables
+           do not have to be populated as a circle.
+
            Args: node_i (pick._warehouse_location): the first node of the route
                  node_j (pick._warehouse_location): the second node of the route
+                 dist (distance matrix): the distance matrix populated in a csv
            Returns: 
         """
 
-##        if node_j == "F-20-27" or node_i == "F-20-28":
-##            node_temp = node_i
-##            node_i = node_j
-##            node_j = node_temp
+        if node_j == "F-20-27" or node_i == "F-20-28":
+            node_temp = node_i
+            node_i = node_j
+            node_j = node_temp
+
+        print("new nodes: ", node_i, ", ", node_j)
 
         distance = dist[node_i][node_j]
-
-        self.total_distance = self.total_distance + distance
 
         if self.route == []:
             self.route.append(node_i)
             self.route.append(node_j)
 
             self.distances.append(distance)
+
+            self.total_distance = self.total_distance + distance
         elif node_i in self.route:
             if self.route[0] == node_i:
                 self.route.insert(0, node_j)
 
                 self.distances.insert(0, distance)
+
+                self.total_distance = self.total_distance + distance
             elif self.route[len(self.route)-1] == node_i:
                 self.route.append(node_j)
 
                 self.distances.append(distance)
+
+                self.total_distance = self.total_distance + distance
         elif node_j in self.route:
             if self.route[0] == node_j:
                 self.route.insert(0, node_i)
 
                 self.distances.append(distance)
+
+                self.total_distance = self.total_distance + distance
             elif self.route[len(self.route)-1] == node_j:
                 self.route.append(node_i)
 
                 self.distances.append(distance)
+
+                self.total_distance = self.total_distance + distance
+        else:
+            self.rest_of_circle[node_i] = node_j
+            
         print(self.route)
-        print(self.distances)
+        #print(self.distances)
+
+    def complete_route(self, dist):
+        """A member function of the class Batch, which completes the circle that the read_route cannot. This is a gaps function
+           which takes the nodes in self.rest_of_circle which could not be populated in self.route with the read_route function
+
+           Args: dist (distance matrix): the distance matrix populated in a csv
+           Returns: 
+        """
+
+        
+        print("Complete route")
+
+        max_iter = 5
+
+        initial_length = len(self.route)
+        if self.rest_of_circle == {}:
+            return ""
+        else:
+            i = 0
+            while len(self.route) < initial_length + len(self.rest_of_circle) and i < max_iter:
+                for node_i, node_j in self.rest_of_circle.items():
+                    if node_i not in self.route or node_j not in self.route:
+                        self.read_route(node_i, node_j, dist)
+                i += 1
+            
 
 class Warehouse:
     #initialize the matrix which will be populated with the distances from csv

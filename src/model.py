@@ -180,7 +180,6 @@ class Model:
                     name = 'x' + '^' + str(batch) + '_' + node_i + '_' + node_j
                     _vars['x', batch, node_i, node_j] = self.gurobi_model.addVar(obj=dist[node_i][node_j],
                                                                                  vtype=gp.GRB.BINARY,name=name)
-                    #print(name)
                     self.gurobi_model.update()
                 index_i += 1
             batch = batch + 1
@@ -229,12 +228,12 @@ class Model:
                         subset = list(subset)
 
                         name = "constraint:" + '3.31' + ", batch: " + str(batch) + ", subset: " + str(subset)
-                        print(name)
+
                         constraint = \
                             sum(sum(self._vars['x', batch, node_i, node_j] \
                             for node_j in subset[(subset.index(node_i)+1):]) for node_i in subset) \
                             <= len(subset) - 1
-                        print(constraint)
+
                         self.gurobi_model.addConstr(constraint, name)
             
                     self.gurobi_model.update()
