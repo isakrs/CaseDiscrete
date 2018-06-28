@@ -13,8 +13,10 @@ MAX_N_BATCHES = 2
 def test():
     """A global function which runs all the tests available.
 
-           Args: 
-           Returns: 
+       Args:
+       
+       Returns:
+       
     """
     test_tsp()
     test_more_batches()

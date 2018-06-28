@@ -2,15 +2,19 @@ import csv
 import gurobipy as gp
 
 def to_csv(file_name, solution, model, error_message, already_created):
-    """A global function which writes the results into a csv file. It needs the file name where to write and more importantly
-       the model and solution objects. The output is a csv file.
+    
+    """A global function which writes the results into a csv file. It needs
+       the file name where to write and more importantly the model and solution
+       objects. The output is a csv file.
 
     Args: file_name (string): the name of the file
           solution (list of batches): list of batches which is an output of read_solution function
           model (Model): the model used to obtain the optimal solution
           error_message (string): it throws the error messages which were collected during testing
           already_created (bool): it indicates whether the csv file was already created or not
+          
     Returns: csv file in the same folder as the infrastructure.py
+    
     """
 
     fieldnames = ['batch', 'number of nodes', 'route', 'distances', 'total distance', 'Error']
@@ -42,11 +46,17 @@ def to_csv(file_name, solution, model, error_message, already_created):
 
                     
 def get_model_solution(model, dist):
-    """A global function which reads the solution of the model. It should be used in order to obtain all the relevant data of the solution
+    
+    """A global function which reads the solution of the model. It should
+       be used in order to obtain all the relevant data of the solution
+       
     Args: model (Model): the model used to obtain the optimal solution
           dist (dictionary): the distance matrix from Warehouse.dist
-    Returns: A list of Batch objects 
+          
+    Returns: A list of Batch objects
+    
     """
+    
     batches = []
     curr_batch = -1
     index = -1
@@ -59,13 +69,13 @@ def get_model_solution(model, dist):
                 #test_y = model.gurobi_model.getVarByName('y' + '^' + str(batch) + '_' + str(order))
                 #if x_k_i_j = 1 and if the current batch does not belong to the saved one then create a new Batch in the list
                 #and save the route and distance
-                if a_var_reference.X == 1 and batch != curr_batch:
+                if a_var_reference.X > 0.5 and batch != curr_batch:
                     batches.append(Batch())
                     curr_batch = batch
                     index += 1
                     batches[index].read_route(node_i, node_j, dist)
                 #if the batch is not new then just store the route and distance in the current batch
-                elif a_var_reference.X == 1:
+                elif a_var_reference.X > 0.5:
                     batches[index].read_route(node_i, node_j, dist)
             index_i += 1
         if (index > -1):
@@ -74,15 +84,19 @@ def get_model_solution(model, dist):
 
 
 def read_orders(data_file, num_picks=None):
+    
     """Function which reads a csv with the orders (example is dataClient.csv)
     and converts the data into an array of Orders (the order id is the same as the index of the array);
     each order contains Picks, which are populated with the data.
+    
     Args:
                  data_file (string): name of the csv file.
         num_picks (float, optional): max overall total number of items, ie picks, that should be read 
                                      from the csv file.
+                                     
     Returns:
         orders: dict of order objects.
+        
     Example:
     >>> orders = read_data_global("dataClient.csv")
     >>> len(orders) #get the number of all orders
@@ -91,6 +105,7 @@ def read_orders(data_file, num_picks=None):
     3
     >>> orders["000001"].picks[6]._id # get the id of the 7th pick of order id=00001
     >>> '000016'
+    
     """
     
     #open the file
@@ -154,15 +169,26 @@ class Batch:
         self.total_distance = 0
 
     def read_route(self, node_i, node_j, dist):
-        """A member function of the class Batch, which takes two nodes as insput and populates the route vector with the nodes
-           by adding node_i or node_j (depends on which node is already there) to the route vector. If none of the nodes is in the
-           the vector then you populate the nodes into the self.rest_of_circle dictionary. That can happen, because the variables
+        
+        """A member function of the class Batch, which takes two nodes as insput
+           and populates the route vector with the nodes by adding node_i or node_j
+           (depends on which node is already there) to the route vector.
+
+           If none of the nodes is in the vector then you populate the nodes into
+           the self.rest_of_circle dictionary. That can happen, because the variables
            do not have to be populated as a circle.
 
            Args: node_i (pick._warehouse_location): the first node of the route
                  node_j (pick._warehouse_location): the second node of the route
                  dist (distance matrix): the distance matrix populated in a csv
-           Returns: 
+                 
+           Returns:
+
+           Example: Lets say that we have following nodes (2,3), (3,4), (1,2)
+           then by going iteratively through the nodes we have:
+
+           route = [1, 2, 3]
+           
         """
 
         if node_j == "F-20-27" or node_i == "F-20-28":
@@ -214,11 +240,33 @@ class Batch:
         #print(self.distances)
 
     def complete_route(self, dist):
-        """A member function of the class Batch, which completes the circle that the read_route cannot. This is a gaps function
-           which takes the nodes in self.rest_of_circle which could not be populated in self.route with the read_route function
+        
+        """A member function of the class Batch, which completes the circle that the
+           read_route cannot. This is a gaps function which takes the nodes in self.rest_of_circle
+           which could not be populated in self.route with the read_route function.
 
            Args: dist (distance matrix): the distance matrix populated in a csv
-           Returns: 
+           
+           Returns:
+
+           Example: Lets say that we have following nodes (1,2), (2,3), (4,5), (3,4)
+           then by going iteratively through the nodes we have:
+
+           route = [1, 2, 3]
+
+           and (4,5) cannot be applied to route. Therefore we store it in self.rest_of_circle
+
+           i.e. rest_of_circle = {4: 5}
+
+           and then we move on with the 4th node which can be applied to route i.e.
+
+           route = [1, 2, 3, 4]
+
+           Now complete_route function comes into play. It uses all the nodes stored in
+           rest_of_circle and tries to add them to the existing route by using read_route.
+
+           i.e. route = [1, 2, 3, 4, 5]
+           
         """
 
         
@@ -244,13 +292,16 @@ class Warehouse:
         self.dist = {}
     
     def read_distances(self, data_file):
+        
         """Function which reads the csv of the distances between the nodes and
            returns a dictionary of dictionaries with keys of the node id
+           
            Args:
                data_file (string): name of the csv file.
            
            Returns:
                self.dist: distances between the nodes.
+               
            Example:
            >>> warehouse = Warehouse() #initialize warehouse object
            >>> warehouse.read_distances("test.csv") #read the distances
