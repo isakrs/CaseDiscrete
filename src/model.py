@@ -7,10 +7,6 @@ NAME_START_NODE = "F-20-28"
 NAME_END_NODE = "F-20-27"
 
 
-# debug
-tours = list()
-
-
 def _max_order_size(orders):
     """Returns number of items in largest order"""
     max_order_size = 0
