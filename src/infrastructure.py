@@ -69,6 +69,7 @@ def get_model_solution(model, dist):
                 #test_y = model.gurobi_model.getVarByName('y' + '^' + str(batch) + '_' + str(order))
                 #if x_k_i_j = 1 and if the current batch does not belong to the saved one then create a new Batch in the list
                 #and save the route and distance
+                print(a_var_reference)
                 if a_var_reference.X > 0.5 and batch != curr_batch:
                     batches.append(Batch())
                     curr_batch = batch

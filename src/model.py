@@ -180,6 +180,7 @@ class Model:
                     name = 'x' + '^' + str(batch) + '_' + node_i + '_' + node_j
                     _vars['x', batch, node_i, node_j] = self.gurobi_model.addVar(obj=dist[node_i][node_j],
                                                                                  vtype=gp.GRB.BINARY,name=name)
+                    #print(name)
                     self.gurobi_model.update()
                 index_i += 1
             batch = batch + 1
@@ -228,12 +229,12 @@ class Model:
                         subset = list(subset)
 
                         name = "constraint:" + '3.31' + ", batch: " + str(batch) + ", subset: " + str(subset)
-
+                        #print(name)
                         constraint = \
                             sum(sum(self._vars['x', batch, node_i, node_j] \
                             for node_j in subset[(subset.index(node_i)+1):]) for node_i in subset) \
                             <= len(subset) - 1
-
+                        print("Constraint 3.31: ", constraint)
                         self.gurobi_model.addConstr(constraint, name)
             
                     self.gurobi_model.update()
@@ -244,25 +245,30 @@ class Model:
             constraint = \
                 sum(v_a * self._vars['y', batch, order] for order in orders) \
                 <= self._vars['b', batch] * self._constants['VOL']
+            print("Constraint: ", constraint)
             self.gurobi_model.addConstr(constraint, name)
             
-##            # Constraint 3.30 in the master thesis
-##            name = "constraint:" + '3.30' + ", batch: " + str(batch)
-##            print(name)
-##            constraint = self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch]
-##            print(constraint)
-##            self.gurobi_model.addConstr(constraint, name)
-##            self.gurobi_model.update()
+            # Constraint 3.30 in the master thesis
+            name = "constraint:" + '3.30' + ", batch: " + str(batch)
+            constraint = self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch]
+            print("Constraint 3.30: ", constraint)
+            self.gurobi_model.addConstr(constraint, name)
+            self.gurobi_model.update()
 
             # Constraint 3.29 in the master thesis
             node_i = 1
             number_nodes = len(self._nodes)
+            print(self._nodes)
             for node in self._nodes:
                 name = "constraint:" + '3.29' + ", batch: " + str(batch) + ", node: " + str(node)
+                print(self._nodes[:(node_i-1)])
+                print(self._nodes[(node_i+1):])
                 constraint = \
-                    sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i-1)]) \
+                    sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i)]) \
                     + sum(self._vars['x', batch, self._nodes[node_i], node_j] for node_j in self._nodes[(node_i+1):]) \
                     == 2 * self._vars['B', batch, self._nodes[node_i]]
+                print(node_i)
+                print("Constraint 3.29: ", constraint)
                 self.gurobi_model.addConstr(constraint, name)
                 
                 node_i += 1
@@ -274,6 +280,7 @@ class Model:
             # Constraint 3.33 in the master thesis
             name = "constraint:" + '3.33' + ", order: " + str(order)
             constraint = sum(self._vars['y', batch_k, order] for batch_k in range(self._constants['max_n_batches'])) == 1
+            print("Constraint 3.33: ", constraint)
             self.gurobi_model.addConstr(constraint, name)
             self.gurobi_model.update()
 
@@ -283,5 +290,6 @@ class Model:
                     name = "constraint:" + '3.34' + ", order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
                     constraint = \
                         self._vars['B', batch, node] >= self._vars['y', batch, order] * self._constants['S', order, node]
+                    print("Constraint 3.34: ", constraint)
                     self.gurobi_model.addConstr(constraint, name)
                 self.gurobi_model.update()

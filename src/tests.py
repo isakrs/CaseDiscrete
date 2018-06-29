@@ -19,7 +19,7 @@ def test():
        
     """
     test_tsp()
-    test_more_batches()
+    #test_more_batches()
     return ""
 
 def test_more_batches():
@@ -92,12 +92,12 @@ def test_tsp():
            Returns: 
     """
     MAX_N_BATCHES = 1
-    NUM_PICKS = 3
+    NUM_PICKS = 1
 
     error = ""
     already_created_file = False
 
-    while NUM_PICKS < 10:
+    while NUM_PICKS < 2:
         dist = Warehouse().read_distances(DIST_FILE)
         print("Size of the dist: ", len(dist))
 
@@ -126,6 +126,7 @@ def test_tsp():
         print('number of variables: ', len(model._vars))
         print('number of constants: ', len(model._constants))
 
+        print(len(solution))
         if len(solution[0].route)-1 > NUM_PICKS + 2:
             error = "The number of edges is " + str(len(solution[0].route - 1)) + "and is exceeding the number of picks (" + str(NUM_PICKS + 2) + ") i.e. a circle is being made in the graph."
 
