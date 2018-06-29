@@ -359,7 +359,7 @@ class Model(gp.Model):
             for node in self._nodes:
                 name = "constraint:" + '3.29' + ", batch: " + str(batch) + ", node: " + str(node)
                 constraint = \
-                    sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i-1)]) \
+                    sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i)]) \
                     + sum(self._vars['x', batch, self._nodes[node_i], node_j] for node_j in self._nodes[(node_i+1):]) \
                     == 2 * self._vars['B', batch, self._nodes[node_i]]
                 super().addConstr(constraint, name)
