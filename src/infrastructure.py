@@ -196,8 +196,6 @@ class Batch:
             node_i = node_j
             node_j = node_temp
 
-        print("new nodes: ", node_i, ", ", node_j)
-
         distance = dist[node_i][node_j]
 
         if self.route == []:
@@ -236,9 +234,6 @@ class Batch:
         else:
             self.rest_of_circle[node_i] = node_j
             
-        print(self.route)
-        #print(self.distances)
-
     def complete_route(self, dist):
         
         """A member function of the class Batch, which completes the circle that the

@@ -7,8 +7,8 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 3
-MAX_N_BATCHES = 1
+NUM_PICKS = 15
+VOLUME = 6
 
 
 def main():
@@ -26,18 +26,22 @@ def main():
     start = datetime.now()
     print('Model start time: ', str(start))
 
-    model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
+    model = Model(dist, orders, volume=VOLUME)
 
     model.gurobi_model.optimize()
 
-    get_model_solution(model, dist)
-
     end = datetime.now()
-    print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
+    print('Model duration time: ', str(end - start), '\n seconds: ', (end - start).seconds, '\nModel ended: ', str(end))
+
+    batches = get_model_solution(model, dist)
+
+    for batch in batches:
+        print('batch: \n', batch.__dict__)
 
     print('number of used nodes: ', len(model._nodes))
     print('number of variables: ', len(model._vars))
     print('number of constants: ', len(model._constants))
+    print('number of constraints: ', model.gurobi_model.numConstrs)
 
 if __name__ == '__main__':
     main()
