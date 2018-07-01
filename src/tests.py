@@ -44,18 +44,14 @@ def test_more_batches():
     while num_batches == 1:
     
         dist = Warehouse().read_distances(DIST_FILE)
-        print("Size of the dist: ", len(dist))
 
         orders = read_orders(ORDERS_FILE, num_picks=NUM_PICKS)
-        print("Number of orders: ", len(orders))
 
         sum_items = 0
         for order_id, order in orders.items():
             sum_items += order.num_picks()
-        print("Number of items: ", sum_items)
 
         start = datetime.now()
-        print('Model start time: ', str(start))
 
         model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
 
@@ -66,11 +62,6 @@ def test_more_batches():
         num_batches = len(current_solution)
 
         end = datetime.now()
-        print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
-
-        print('number of used nodes: ', len(model._nodes))
-        print('number of variables: ', len(model._vars))
-        print('number of constants: ', len(model._constants))
 
         iteration_index += 1
 
@@ -94,24 +85,23 @@ def test_tsp():
     MAX_N_BATCHES = 1
     NUM_PICKS = 1
 
+    max_num_picks = 8
+    
+
     error = ""
     already_created_file = False
 
-    while NUM_PICKS < 2:
+    while NUM_PICKS < max_num_picks:
         dist = Warehouse().read_distances(DIST_FILE)
-        print("Size of the dist: ", len(dist))
 
         orders = read_orders(ORDERS_FILE, num_picks=NUM_PICKS)
-        print("Number of orders: ", len(orders))
 
         sum_items = 0
         for order_id, order in orders.items():
             sum_items += order.num_picks()
 
-        print("Number of items: ", sum_items)
 
         start = datetime.now()
-        print('Model start time: ', str(start))
 
         model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
 
@@ -120,13 +110,7 @@ def test_tsp():
         solution = get_model_solution(model, dist)
 
         end = datetime.now()
-        print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
 
-        print('number of used nodes: ', len(model._nodes))
-        print('number of variables: ', len(model._vars))
-        print('number of constants: ', len(model._constants))
-
-        print(len(solution))
         if len(solution[0].route)-1 > NUM_PICKS + 2:
             error = "The number of edges is " + str(len(solution[0].route - 1)) + "and is exceeding the number of picks (" + str(NUM_PICKS + 2) + ") i.e. a circle is being made in the graph."
 
@@ -141,6 +125,12 @@ def test_tsp():
                 error = "The route is not ending at the end node."
             else:
                 error = error + ", " + "The route is not ending at the end node."
+
+        if ["F-20-27", "F-20-28"] not in solution[0].edges or ["F-20-28", "F-20-27"] not in solution[0].edges:
+            if error == "":
+                error = "The route does not include the edge between the starting and end node."
+            else:
+                error = error + ", " + "The route does not include the edge between the starting and end node."
 
         to_csv("one_batch_test.csv", solution, model, error, already_created_file)
 

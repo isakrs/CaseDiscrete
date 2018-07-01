@@ -17,7 +17,7 @@ def to_csv(file_name, solution, model, error_message, already_created):
     
     """
 
-    fieldnames = ['batch', 'number of nodes', 'route', 'distances', 'total distance', 'Error']
+    fieldnames = ['number of items', 'route', 'edges', 'distances', 'total distance', 'Error']
     if not already_created:
         with open(file_name, 'w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -27,10 +27,11 @@ def to_csv(file_name, solution, model, error_message, already_created):
             for batch in solution:
                 route_length = len(batch.route)
                 distances_length = len(batch.distances)
-                writer.writerow({'batch': batch, 'number of nodes': route_length, 'route': batch.route, 'distances': batch.distances,
-                                 'total distance': batch.total_distance, 'Error': error_message})
-            writer.writerow({'batch': "----", 'number of nodes': "----", 'route': "-----", 'distances': "----",
-                                 'total distance': "----", 'Error': "----"})
+                writer.writerow({'number of items': route_length, 'route': batch.route, 'edges': batch.edges,
+                                 'distances': batch.distances,'total distance': batch.total_distance,
+                                 'Error': error_message})
+            writer.writerow({'number of items': "----", 'route': "-----", 'edges': "----",
+                             'distances': "----", 'total distance': "----", 'Error': "----"})
     else:
         with open(file_name, 'a') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -38,11 +39,12 @@ def to_csv(file_name, solution, model, error_message, already_created):
             for batch in solution:
                 route_length = len(batch.route)
                 distances_length = len(batch.distances)
-                writer.writerow({'batch': batch, 'number of nodes': route_length, 'route': batch.route, 'distances': batch.distances,
-                                 'total distance': batch.total_distance, 'Error': error_message})
+                writer.writerow({'number of items': route_length, 'route': batch.route, 'edges': batch.edges,
+                                 'distances': batch.distances, 'total distance': batch.total_distance,
+                                 'Error': error_message})
 
-            writer.writerow({'batch': "----", 'number of nodes': "----", 'route': "-----", 'distances': "----",
-                                 'total distance': "----", 'Error': "----"})
+            writer.writerow({'number of items': "----", 'route': "-----", 'edges': "----",
+                             'distances': "----", 'total distance': "----", 'Error': "----"})
 
                     
 def get_model_solution(model, dist):
@@ -66,10 +68,8 @@ def get_model_solution(model, dist):
             for node_j in model._nodes[(index_i +1):]:
                 a_var_reference = model.gurobi_model.getVarByName('x' + '^' + str(batch) + '_' + node_i + '_' + node_j)
 
-                #test_y = model.gurobi_model.getVarByName('y' + '^' + str(batch) + '_' + str(order))
                 #if x_k_i_j = 1 and if the current batch does not belong to the saved one then create a new Batch in the list
                 #and save the route and distance
-                print(a_var_reference)
                 if a_var_reference.X > 0.5 and batch != curr_batch:
                     batches.append(Batch())
                     curr_batch = batch
@@ -81,6 +81,7 @@ def get_model_solution(model, dist):
             index_i += 1
         if (index > -1):
             batches[index].complete_route(dist)
+            batches[index].find_edges()
     return batches
 
 
@@ -166,6 +167,7 @@ class Batch:
     def __init__(self):
         self.route = []
         self.distances = []
+        self.edges = []
         self.rest_of_circle = {}
         self.total_distance = 0
 
@@ -196,8 +198,6 @@ class Batch:
             node_temp = node_i
             node_i = node_j
             node_j = node_temp
-
-        print("new nodes: ", node_i, ", ", node_j)
 
         distance = dist[node_i][node_j]
 
@@ -236,9 +236,6 @@ class Batch:
                 self.total_distance = self.total_distance + distance
         else:
             self.rest_of_circle[node_i] = node_j
-            
-        print(self.route)
-        #print(self.distances)
 
     def complete_route(self, dist):
         
@@ -270,8 +267,6 @@ class Batch:
            
         """
 
-        
-        print("Complete route")
 
         max_iter = 5
 
@@ -285,6 +280,26 @@ class Batch:
                     if node_i not in self.route or node_j not in self.route:
                         self.read_route(node_i, node_j, dist)
                 i += 1
+
+    def find_edges(self):
+
+        """
+
+           Member function which reads all the edges out of a route
+           
+           Args:
+               
+           
+           Returns:
+               self.edges: A list of lists of two elements which indicates the edge.
+
+
+        """
+        index = 1
+        while index < len(self.route):
+            self.edges.append([self.route[index-1], self.route[index]])
+            index += 1
+            
             
 
 class Warehouse:
