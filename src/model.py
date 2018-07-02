@@ -56,7 +56,6 @@ def _subtourelim(model, where):
                 if tour != None and len(tour) < len(used_nodes[batch_k]): # then a subtour exists
                     # TODO: Should we keep this print. Might be nice to have to see that 
                     # the model is still running.
-                    print('adding a lazy constraint')
                     
                     # adding this subtour constraint for every batch
                     # so that the same subtour isn't just created in another batch
@@ -405,18 +404,17 @@ class Model(gp.Model):
         solution = super().getAttr('x', self._vars)
         used_nodes = [[] for i in range(self._constants['max_n_batches'])]
 
-        print()
+        results_string = str()
 
         for batch in range(self._constants['max_n_batches']):
             for node in self._nodes:
                 if solution['B', batch, node] > 0.5:
                     used_nodes[batch].append(node)
 
-            print('batch: ', batch, 'items: ', used_nodes[batch])
-            print()
+            results_string += 'batch: ' + str(batch) + '\t'
+            results_string += 'items: ' + str(used_nodes[batch])
+            results_string += '\n'
 
-        print()
-
-        return used_nodes
+        return results_string
 
 
