@@ -7,7 +7,8 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 110 # first 100 orders is 438 picks
+NUM_PICKS = [100]
+# first 100 orders is 438 picks
 VOL = 6         # max number of orders on tray
 
 MIPGAP = 1000   # 1000 means, 1000 mm (1 meter) away from optimial solution
@@ -16,27 +17,35 @@ MIPGAP = 1000   # 1000 means, 1000 mm (1 meter) away from optimial solution
 def main():
     dist = Warehouse().read_distances(DIST_FILE)
 
-    orders = read_orders(ORDERS_FILE, num_picks=NUM_PICKS)
-    print("Number of orders: ", len(orders))
+    file_string = str()
 
-    start = datetime.now()
-    print('Model start time: ', str(start))
+    for n_picks in NUM_PICKS:
+        orders = read_orders(ORDERS_FILE, num_picks=n_picks)
 
-    model = Model(dist, orders, volume=VOL)
+        start = datetime.now()
+        model = Model(dist, orders, volume=VOL)
+        model.optimize()
+        end = datetime.now()
+        duration = end - start
 
-    #model.optimize(MIPGap=MIPGAP)
-    model.optimize()
+        model_string = str()
+        model_string = "New Model" + '\n'
+        model_string += "Number of items: " + str(n_picks) + '\n'
+        model_string += "Number of orders: " + str(len(orders)) + '\n'
+        model_string += "Number of nodes: " + str(len(model._nodes)) + '\n'
+        model_string += "Number of variables: " + str(model.numVars) + '\n'
+        model_string += "Number of constraints: " + str(model.numConstrs) + '\n'
+        model_string += "Model duration: " + str(duration) + '\n'
+        model_string += "Model duration seconds: " + str(duration.seconds) + '\n'
+        model_string += "Model batches: \n"
+        model_string += model.solution_batches()
+        model_string += '\n'
+        file_string += model_string
+        print(model_string)
 
-    end = datetime.now()
-    print('Model duration time: ', str(end - start), 'seconds: ', (end - start).seconds)
-    print('Model ended: ', str(end))
-
-    model.solution_batches()
-
-    print('number of used nodes: ', len(model._nodes))
-    print('number of variables: ', model.numVars)
-    print('number of constants: ', len(model._constants))
-    print('number of constraints: ', model.numConstrs)
+    f_name = "results/new_model_100_items_results.txt"
+    with open(f_name, 'w') as the_file:
+        the_file.write(file_string)
 
 if __name__ == '__main__':
     main()
