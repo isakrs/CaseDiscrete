@@ -7,31 +7,29 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 5
-MAX_N_BATCHES = 1
+NUM_PICKS = 438 # first 100 orders is 438 picks
+VOL = 6         # max number of orders on tray
+
+MIPGAP = 1000   # 1000 means, 1000 mm (1 meter) away from optimial solution
 
 
 def main():
     dist = Warehouse().read_distances(DIST_FILE)
-    print("Size of the dist: ", len(dist))
 
     orders = read_orders(ORDERS_FILE, num_picks=NUM_PICKS)
     print("Number of orders: ", len(orders))
 
-    sum_items = 0
-    for order_id, order in orders.items():
-        sum_items += order.num_picks()
-    print("Number of items: ", sum_items)
-
     start = datetime.now()
     print('Model start time: ', str(start))
 
-    model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
+    model = Model(dist, orders, volume=VOL)
 
-    model.gurobi_model.optimize()
+    model.optimize(MIPGap=MIPGAP)
 
     end = datetime.now()
     print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
+
+    model.solution_batches()
 
     print('number of used nodes: ', len(model._nodes))
     print('number of variables: ', len(model._vars))
