@@ -7,7 +7,7 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 15
+NUM_PICKS = 10
 VOLUME = 6
 
 
@@ -39,7 +39,7 @@ def main():
         print('batch: \n', batch.__dict__)
 
     print('number of used nodes: ', len(model._nodes))
-    print('number of variables: ', len(model._vars))
+    print('number of variables: ', model.gurobi_model.numVars)
     print('number of constants: ', len(model._constants))
     print('number of constraints: ', model.gurobi_model.numConstrs)
 
