@@ -31,7 +31,7 @@ def test_more_batches():
            Returns: 
     """
     NUM_PICKS = 5
-    MAX_N_BATCHES = 2
+    VOLUME = 6
 
     error = ""
     already_created_file = False
@@ -53,7 +53,7 @@ def test_more_batches():
 
         start = datetime.now()
 
-        model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
+        model = Model(dist, orders, volume=VOLUME)
 
         model.gurobi_model.optimize()
 
@@ -74,27 +74,29 @@ def test_more_batches():
 
         already_created_file = True
 
-def test_tsp():
+def test_tsp(up_to_num_items=8):
 
     """A global function which iterates through the data and increases the number of nodes in the model by one. The tests
        checks if the solution has n-1 nodes, starts at initial node and ends at the end node. 
 
-           Args: 
-           Returns: 
+    Args:
+        up_to_num_items (int, optional): number of items you wish to test the model for.
+
+    Returns: 
     """
     MAX_N_BATCHES = 1
-    NUM_PICKS = 1
+    num_picks = 1
 
-    max_num_picks = 8
+    max_num_picks = up_to_num_items
     
 
     error = ""
     already_created_file = False
 
-    while NUM_PICKS < max_num_picks:
+    while num_picks < max_num_picks:
         dist = Warehouse().read_distances(DIST_FILE)
 
-        orders = read_orders(ORDERS_FILE, num_picks=NUM_PICKS)
+        orders = read_orders(ORDERS_FILE, num_picks=num_picks)
 
         sum_items = 0
         for order_id, order in orders.items():
@@ -111,30 +113,34 @@ def test_tsp():
 
         end = datetime.now()
 
-        if len(solution[0].route)-1 > NUM_PICKS + 2:
+        # subtour test
+        if len(solution[0].route)-1 > num_picks + 2:
             error = "The number of edges is " + str(len(solution[0].route - 1)) + "and is exceeding the number of picks (" + str(NUM_PICKS + 2) + ") i.e. a circle is being made in the graph."
 
-        if solution[0].route[0] != "F-20-27":
+        # start node and end node connection test
+        if "F-20-27" not in solution[0].route :
             if error == "":
                 error = "The route is not starting at the starting node"
             else:
                 error = error + ", " + "The route is not starting at the starting node"
 
-        if solution[0].route[len(solution[0].route)-1] != "F-20-28":
+        if "F-20-28" not in solution[0].route:
             if error == "":
                 error = "The route is not ending at the end node."
             else:
                 error = error + ", " + "The route is not ending at the end node."
 
-        if ["F-20-27", "F-20-28"] not in solution[0].edges or ["F-20-28", "F-20-27"] not in solution[0].edges:
+        if  (['F-20-27', 'F-20-28'] not in solution[0].edges) or \
+            (['F-20-28', 'F-20-27'] not in solution[0].edges):
             if error == "":
                 error = "The route does not include the edge between the starting and end node."
             else:
                 error = error + ", " + "The route does not include the edge between the starting and end node."
+            print(type(solution[0].edges))
 
-        to_csv("one_batch_test.csv", solution, model, error, already_created_file)
+        to_csv("test.csv", solution, model, error, already_created_file)
 
-        NUM_PICKS = NUM_PICKS + 1
+        num_picks += 1
         already_created_file = True
         error = ""
 
