@@ -7,35 +7,45 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = 5
-MAX_N_BATCHES = 1
+NUM_PICKS = [100]
+# first 100 orders is 438 picks
+VOL = 6         # max number of orders on tray
+
+MIPGAP = 1000   # 1000 means, 1000 mm (1 meter) away from optimial solution
 
 
 def main():
     dist = Warehouse().read_distances(DIST_FILE)
-    print("Size of the dist: ", len(dist))
 
-    orders = read_orders(ORDERS_FILE, num_picks=NUM_PICKS)
-    print("Number of orders: ", len(orders))
+    file_string = str()
 
-    sum_items = 0
-    for order_id, order in orders.items():
-        sum_items += order.num_picks()
-    print("Number of items: ", sum_items)
+    for n_picks in NUM_PICKS:
+        orders = read_orders(ORDERS_FILE, num_picks=n_picks)
 
-    start = datetime.now()
-    print('Model start time: ', str(start))
+        start = datetime.now()
+        model = Model(dist, orders, volume=VOL)
+        model.optimize()
+        end = datetime.now()
+        duration = end - start
 
-    model = Model(dist, orders, max_n_batches=MAX_N_BATCHES)
+        model_string = str()
+        model_string = "New Model" + '\n'
+        model_string += "Number of items: " + str(n_picks) + '\n'
+        model_string += "Number of orders: " + str(len(orders)) + '\n'
+        model_string += "Number of nodes: " + str(len(model._nodes)) + '\n'
+        model_string += "Number of variables: " + str(model.numVars) + '\n'
+        model_string += "Number of constraints: " + str(model.numConstrs) + '\n'
+        model_string += "Model duration: " + str(duration) + '\n'
+        model_string += "Model duration seconds: " + str(duration.seconds) + '\n'
+        model_string += "Model batches: \n"
+        model_string += model.solution_batches()
+        model_string += '\n'
+        file_string += model_string
+        print(model_string)
 
-    model.gurobi_model.optimize()
-
-    end = datetime.now()
-    print('Model duration time: ', str(end - start), '\nModel ended: ', str(end))
-
-    print('number of used nodes: ', len(model._nodes))
-    print('number of variables: ', len(model._vars))
-    print('number of constants: ', len(model._constants))
+    f_name = "results/new_model_100_items_results.txt"
+    with open(f_name, 'w') as the_file:
+        the_file.write(file_string)
 
 if __name__ == '__main__':
     main()
