@@ -1,9 +1,11 @@
 import gurobipy as gp
 import itertools
+import math
 
 
 NAME_START_NODE = "F-20-28"
 NAME_END_NODE = "F-20-27"
+
 
 def find_subsets(S):
     """Helper function which returns a set of all the subsets of set S.
@@ -56,24 +58,22 @@ class Model:
         Superscripts are used before subscripts when indexing in dicts.
     """
 
-    def __init__(self, dist, orders, VOL=None, max_n_batches=None):
+    def __init__(self, dist, orders, volume=6, max_n_batches=None):
         """
         Args:
             orders (:obj:`dict` of :obj:`infrastructure.Order`): Dict with all orders.
                                                                  key: order_id, item: list of infrastructure.Order.
                                             dist (:obj: `dict`): dict of shortest distances, 
                                                                  between node i and node j, dist['i']['j'].
-                                          VOL (float, optional): Maximum number of items, ie max volume, that can 
-                                                                 fit on a workers tray. If VOL is not given (None), 
-                                                                 then it will be set to the size of the 
-                                                                 largest order (default).
+                                         volume (int, optional): Maximum number of orders, ie max volume, that can 
+                                                                 fit on a workers tray. Default 6.
                                   max_n_batches (int, optional): Maximum number of batches (tours in the warehouse) 
                                                                  that is allowed. If not given (default), ie None, 
                                                                  then it will be set to the total number of orders.
         """
         # set none gurobi types
         self._nodes, self._n_picks = self._used_nodes(orders)
-        self._constants = self._set_constants(orders, max_n_batches=max_n_batches)
+        self._constants = self._set_constants(orders, volume, max_n_batches)
 
         # set gurobi types
         self.gurobi_model = gp.Model()
@@ -104,19 +104,20 @@ class Model:
 
         return nodes, n_picks
 
-    def _set_constants(self, orders, VOL=None, max_n_batches=None):
+    def get_variables():
+        return _vars
+
+    def _set_constants(self, orders, volume, max_n_batches):
         """Sets all constant numbers for Model.
         Note:
             Convention: superscripts are used before subscripts when indexing in dicts.
         Args:
                     orders (:obj: `dict`): Dict of all orders.
                                            key: order_id (str) and item: (list of infrastructure.Order)
-                    VOL (float, optional): Maximum number of items, ie max volume, that can fit on a workers tray.
-                                           If VOL is not given (None), then it will be set to the size of the 
-                                           largest order.
-            max_n_batches (int, optional): Maximum number of batches (tours in the warehouse) that is allowed. 
-                                           If not given (default), ie None, then it will be set to 
-                                           the total number of orders.
+                             volume (int): Maximum number of orders, ie max volume, that can fit 
+                                           on a workers tray.                      
+                      max_n_batches (int): Maximum number of batches (tours in the warehouse) that is allowed. 
+
         Returns:
              nodes (:obj: `dict`): dict with all Model constants
                                    key: constant name and item: value (float)
@@ -125,14 +126,12 @@ class Model:
         constants = dict()
 
         # constant VOL
-        if VOL is None:
-            constants['VOL'] = _max_order_size(orders)
-        else:
-            constants['VOL'] = VOL
+        constants['VOL'] = volume
 
         # constant max_n_batches
+        num_orders = len(orders)
         if max_n_batches is None:
-            constants['max_n_batches'] = len(orders)
+            constants['max_n_batches'] =  math.ceil(num_orders/volume)
         else: 
             constants['max_n_batches'] = max_n_batches
 
@@ -217,25 +216,25 @@ class Model:
             # Constraint 3.31 in the master thesis
             set_subsets = find_subsets(self._nodes)
             for subset in set_subsets:
-                if subset != ():
-                    if (len(subset[0]) == 1):
-                        subset = [''.join(subset)]
+                if subset != (): 
+                    if (len(subset[0]) == 1):   
+                        # then the cardinality of the subset is 1.
+                        # there is no x^k_i_i in this undirected model
+                        # hence no need to add any constraint
                         next
                     else:
                         subset = list(subset)
-
                         name = "constraint:" + '3.31' + ", batch: " + str(batch) + ", subset: " + str(subset)
                         constraint = \
                             sum(sum(self._vars['x', batch, node_i, node_j] \
                             for node_j in subset[(subset.index(node_i)+1):]) for node_i in subset) \
-                            <= len(subset) 
-                        self.gurobi_model.addConstr(constraint, name)
-            
-            self.gurobi_model.update()
+                            <= len(subset) - 1
+                        self.gurobi_model.addConstr(constraint, name)         
+                    self.gurobi_model.update()
              
             
             # Constraint 3.32 in the master thesis
-            name = "constraint:" + '3.32' + ", batch: " + str(batch)
+            name = "constraint:" + '3.32' + ", batch: " + str(batch) 
             constraint = \
                 sum(v_a * self._vars['y', batch, order] for order in orders) \
                 <= self._vars['b', batch] * self._constants['VOL']
@@ -253,7 +252,7 @@ class Model:
             for node in self._nodes:
                 name = "constraint:" + '3.29' + ", batch: " + str(batch) + ", node: " + str(node)
                 constraint = \
-                    sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i-1)]) \
+                    sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i)]) \
                     + sum(self._vars['x', batch, self._nodes[node_i], node_j] for node_j in self._nodes[(node_i+1):]) \
                     == 2 * self._vars['B', batch, self._nodes[node_i]]
                 self.gurobi_model.addConstr(constraint, name)

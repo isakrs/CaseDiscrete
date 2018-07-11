@@ -103,5 +103,8 @@ ENV/
 # data folder
 data/
 
+# result folder
+results/
+
 # Pycharm settings
 .idea/
