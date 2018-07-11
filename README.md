@@ -1,16 +1,21 @@
 # CaseDiscrete
 Repository for Case Studies in Discrete Optimization. 
 
-This repo wishes to minimize the total distance walked in a warehouse.
+This repo wishes to minimize the total distance walked in a warehouse. Full mathematical description of the model is found in `Technical Documentation.pdf`.
 
 ## Requirements
 This project uses Python 3.6.4. 
 This project requires `gurobipy` among other packages. `gurobipy` is used with an academic licence.
 
+This project requires that the user makes a folder `data` on the top level. 
+This folder should entail a distance csv for the shortest distances in the warehouse. 
+This forlder should also entail a csv file specify all the order details.
+None of these files are pushed to Github as this is private Company information.
+
 ## Code Style Agreement
 ### Git Use
-- Commit messages should be well written and written in imperative, to keep the history good.
 - `master` branch is used as base and should always have running code. An extra `dev` branch will be considered ones the project exceeds 1000 code lines. Feature branches are used for new code. Every pull request into `master` should be approved by another user, and the Trello card for that task should in the pull request message.
+- Commit messages should be well written and written in imperative, to keep the history good.
 
 ### Python Code Style
 
