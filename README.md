@@ -12,6 +12,13 @@ This folder should entail a distance csv for the shortest distances in the wareh
 This forlder should also entail a csv file specify all the order details.
 None of these files are pushed to Github as this is private Company information.
 
+### Run Program
+In order to run the program the above requirements must be satisfied. Then type the following commands in Terminal/Command Line
+```
+cd src
+python3 main.py
+```
+
 ## Code Style Agreement
 ### Git Use
 - `master` branch is used as base and should always have running code. An extra `dev` branch will be considered ones the project exceeds 1000 code lines. Feature branches are used for new code. Every pull request into `master` should be approved by another user, and the Trello card for that task should in the pull request message.
