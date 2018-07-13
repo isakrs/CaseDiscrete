@@ -7,7 +7,7 @@ from datetime import datetime
 ORDERS_FILE = "../data/DatenClient1_day_1.csv"
 DIST_FILE = "../data/DistanceMatrix_Final.csv"
 
-NUM_PICKS = [100]
+NUM_PICKS = [40]
 # first 100 orders is 438 picks
 VOL = 6         # max number of orders on tray
 

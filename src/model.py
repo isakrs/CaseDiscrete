@@ -49,6 +49,7 @@ def _subtourelim(model, where):
 
         # all necessary info is now attained in order to find subtours
         # time to add constraints to prohibit the subtours
+        # this the necessary constraints of constraints 4 in the Technical Documentation.pdf
         for batch_k in range(model._constants['max_n_batches']):
             if len(used_nodes[batch_k]) > 0: # then check/correct the check the cycle
                 # function subtour finds the shortest cycle per batch
@@ -340,23 +341,23 @@ class Model(gp.Model):
             None: it serves as a void function where all the constraint are being set in the Gurobi model
         """
         for batch in range(self._constants['max_n_batches']):
-            # Constraint 3.32 in the master thesis, "Volume Constraint"
-            name = "constraint:" + '3.32' + ", batch: " + str(batch)
+            # Constraint 5 in the Technical Documentation.pdf, "Volume Constraint"
+            name = "constraint:" + '5' + ", batch: " + str(batch)
             constraint = \
                 sum(v_a * self._vars['y', batch, order] for order in orders) \
                 <= self._vars['b', batch] * self._constants['VOL']
             super().addConstr(constraint, name)
             
-            # Constraint 3.30 in the master thesis
-            name = "constraint:" + '3.30' + ", batch: " + str(batch)
+            # Constraint 3 in the Technical Documentation.pdf, "End to start constraint"
+            name = "constraint:" + '3' + ", batch: " + str(batch)
             constraint = self._vars['x', batch, NAME_START_NODE, NAME_END_NODE] == self._vars['b', batch]
             super().addConstr(constraint, name)
 
-            # Constraint 3.29 in the master thesis, "Enter and leave constraint"
+            # Constraint 2 in the Technical Documentation.pdf, "Enter and leave constraint"
             node_i = 1
             number_nodes = len(self._nodes)
             for node in self._nodes:
-                name = "constraint:" + '3.29' + ", batch: " + str(batch) + ", node: " + str(node)
+                name = "constraint:" + '2' + ", batch: " + str(batch) + ", node: " + str(node)
                 constraint = \
                     sum(self._vars['x', batch, node_l, self._nodes[node_i]] for node_l in self._nodes[:(node_i)]) \
                     + sum(self._vars['x', batch, self._nodes[node_i], node_j] for node_j in self._nodes[(node_i+1):]) \
@@ -368,16 +369,16 @@ class Model(gp.Model):
                     node_i = node_i - 1
 
         for order in orders:
-            # Constraint 3.33 in the master thesis, "Pick all orders"
-            name = "constraint:" + '3.33' + ", order: " + str(order)
+            # Constraint 6 in the Technical Documentation.pdf, "Pick all orders"
+            name = "constraint:" + '6' + ", order: " + str(order)
             constraint = sum(self._vars['y', batch_k, order] for batch_k in range(self._constants['max_n_batches'])) == 1
             super().addConstr(constraint, name)
             #super().update()
 
-            # Constraint 3.34 in the master thesis, "Visit node in batch"
+            # Constraint 7 in the Technical Documentation.pdf, "Visit node in batch"
             for batch in range(self._constants['max_n_batches']):
                 for node in self._nodes:
-                    name = "constraint:" + '3.34' + ", order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
+                    name = "constraint:" + '7' + ", order: " + str(order) + ", batch: " + str(batch) + ", node: " + str(node)
                     constraint = \
                         self._vars['B', batch, node] >= self._vars['y', batch, order] * self._constants['S', order, node]
                     super().addConstr(constraint, name)
