@@ -261,7 +261,7 @@ class Model(gp.Model):
         # constant max_n_batches
         num_orders = len(orders)
         if max_n_batches is None:
-            constants['max_n_batches'] =  math.ceil(num_orders/volume)
+            constants['max_n_batches'] =  num_orders
         else: 
             constants['max_n_batches'] = max_n_batches
 

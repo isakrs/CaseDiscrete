@@ -4,8 +4,8 @@ from model import Model
 from datetime import datetime
 
 
-ORDERS_FILE = "../data/DatenClient1_day_1.csv"
-DIST_FILE = "../data/DistanceMatrix_Final.csv"
+ORDERS_FILE = "../data/example.csv"
+DIST_FILE = "../data/dist.csv"
 
 NUM_PICKS = [40]
 # first 100 orders is 438 picks
