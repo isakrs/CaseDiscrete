@@ -7,11 +7,10 @@ from datetime import datetime
 ORDERS_FILE = "../data/example.csv"
 DIST_FILE = "../data/dist.csv"
 
-NUM_PICKS = [40]
-# first 100 orders is 438 picks
-VOL = 6         # max number of orders on tray
+NUM_PICKS = [40]	# first 100 orders is 438 picks
+VOL = 6         	# max number of orders on tray
 
-MIPGAP = 1000   # 1000 means, 1000 mm (1 meter) away from optimial solution
+MIPGAP = 1000   	# 1000 means, 1000 mm (1 meter) away from optimial solution
 
 
 def main():
