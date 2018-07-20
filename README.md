@@ -7,10 +7,10 @@ This repo wishes to minimize the total distance walked in a warehouse. Full math
 This project uses Python 3.6.4. 
 This project requires `gurobipy` among other packages. `gurobipy` is used with an academic licence.
 
-This project requires that the user makes a folder `data` on the top level. 
-This folder should entail a distance csv for the shortest distances in the warehouse. 
-This forlder should also entail a csv file specify all the order details.
-None of these files are pushed to Github as this is private Company information.
+To run program on personal data, you are required to update the following files `data/example.csv` and `data/dist.csv`. 
+This first file should also entail a csv file specify all the order details.
+This second file should entail a distance csv for the shortest distances in the warehouse.
+Personal files are pushed to Github as this is private company information.
 
 ### Run Program
 In order to run the program the above requirements must be satisfied. Then type the following commands in Terminal/Command Line
